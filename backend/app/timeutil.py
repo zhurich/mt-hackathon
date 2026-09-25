@@ -11,7 +11,8 @@ def utcnow() -> datetime:
     return datetime.now(UTC).replace(tzinfo=None)
 
 
-UtcDatetime = Annotated[
-    datetime,
-    PlainSerializer(lambda value: value.replace(tzinfo=UTC).isoformat(), return_type=str),
-]
+def iso_utc(value: datetime) -> str:
+    return value.replace(tzinfo=UTC).isoformat()
+
+
+UtcDatetime = Annotated[datetime, PlainSerializer(iso_utc, return_type=str)]
