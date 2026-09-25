@@ -1,0 +1,29 @@
+# Челленджи — ограниченные по времени задания с наградой XP.
+# Прогресс = число попыток в период [starts, ends], подходящих под filter (формат filter — как в achievements.yaml).
+
+- id: safety-week
+  title: Неделя безопасности
+  description: Успешно пройдите 3 сценария категорий «Безопасность» или «Медицина».
+  starts: 2026-09-21
+  ends: 2026-10-04
+  filter: { outcome: success, category: [safety, medical] }
+  min: 3
+  reward_xp: 100
+
+- id: role-model-sprint
+  title: Спринт ролевой модели
+  description: Дважды используйте все 4 шага ролевой модели за один сценарий.
+  starts: 2026-09-21
+  ends: 2026-10-04
+  filter: { role_model_full: true }
+  min: 2
+  reward_xp: 60
+
+- id: no-hesitation
+  title: Без промедления
+  description: Завершите 3 сценария без единого таймаута.
+  starts: 2026-09-25
+  ends: 2026-10-11
+  filter: { no_timeouts: true }
+  min: 3
+  reward_xp: 50

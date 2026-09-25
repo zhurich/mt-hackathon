@@ -1,0 +1,96 @@
+# Достижения. Новое достижение существующего типа добавляется только здесь, без правки кода.
+#
+# Типы правил (rule.type), реализованы в app/gamification/achievements.py:
+#   attempts       — завершено не меньше min попыток, подходящих под filter
+#   competency     — мастерство по компетенции code не ниже min
+#   level          — достигнут уровень не ниже min (0 — Стажёр)
+#   streak         — тренировки days дней подряд
+#   all_scenarios  — успех во всех опубликованных сценариях
+#
+# Поля filter (все необязательны), см. app/gamification/rules.py:
+#   outcome, category (строка или список), perfect, role_model_full, no_timeouts,
+#   min_safety, min_loyalty, max_avg_reaction_ms, min_difficulty
+
+- code: first-trip
+  title: Первый рейс
+  description: Завершите первый сценарий.
+  icon: train
+  rule: { type: attempts, min: 1 }
+
+- code: seasoned
+  title: Бывалый
+  description: Завершите 10 сценариев.
+  icon: medal
+  rule: { type: attempts, min: 10 }
+
+- code: flawless
+  title: Без единой ошибки
+  description: Пройдите сценарий, выбрав лучший вариант в каждом решении.
+  icon: star
+  rule: { type: attempts, min: 1, filter: { perfect: true } }
+
+- code: four-steps
+  title: Четыре шага
+  description: Используйте все шаги ролевой модели «Признать — Правило — Решение — Заверить» за один сценарий.
+  icon: chat
+  rule: { type: attempts, min: 1, filter: { role_model_full: true } }
+
+- code: cool-head
+  title: Хладнокровие
+  description: Успешно пройдите сценарий высшей сложности без единого таймаута.
+  icon: snowflake
+  rule: { type: attempts, min: 1, filter: { outcome: success, min_difficulty: 3, no_timeouts: true } }
+
+- code: first-responder
+  title: Скорая помощь
+  description: Успешно справьтесь с медицинской ситуацией.
+  icon: heart-pulse
+  rule: { type: attempts, min: 1, filter: { outcome: success, category: medical } }
+
+- code: peacemaker
+  title: Миротворец
+  description: Успешно урегулируйте 2 конфликта.
+  icon: handshake
+  rule: { type: attempts, min: 2, filter: { outcome: success, category: conflict } }
+
+- code: guardian
+  title: Страж безопасности
+  description: Завершите сценарий успехом с рейтингом безопасности 90 и выше.
+  icon: shield
+  rule: { type: attempts, min: 1, filter: { outcome: success, min_safety: 90 } }
+
+- code: favourite
+  title: Любимец пассажиров
+  description: Завершите сценарий успехом с лояльностью пассажира 90 и выше.
+  icon: smile
+  rule: { type: attempts, min: 1, filter: { outcome: success, min_loyalty: 90 } }
+
+- code: barrier-free
+  title: Без барьеров
+  description: Успешно пройдите 2 сценария с особыми категориями пассажиров.
+  icon: accessibility
+  rule: { type: attempts, min: 2, filter: { outcome: success, category: accessibility } }
+
+- code: wordsmith
+  title: Мастер слова
+  description: Достигните мастерства 80 % в компетенции «Коммуникация».
+  icon: quote
+  rule: { type: competency, code: communication, min: 80 }
+
+- code: streak-3
+  title: Три дня подряд
+  description: Тренируйтесь 3 дня подряд.
+  icon: flame
+  rule: { type: streak, days: 3 }
+
+- code: senior
+  title: Старший проводник
+  description: Достигните уровня «Старший проводник».
+  icon: crown
+  rule: { type: level, min: 4 }
+
+- code: vsm-expert
+  title: Эксперт ВСМ
+  description: Добейтесь успеха во всех опубликованных сценариях.
+  icon: trophy
+  rule: { type: all_scenarios }
