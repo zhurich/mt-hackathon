@@ -1,0 +1,281 @@
+id: medical-emergency
+version: 1
+title: Пассажиру стало плохо
+summary: Пассажиру в вагоне комфорт-класса резко становится хуже. До ближайшей станции — считанные минуты.
+category: medical
+difficulty: 3
+service_class: comfort
+sources:
+  - "Ситуации на борту, №19 «Пассажиру стало плохо»"
+  - "Ситуации на борту, №28 «Пассажир просит предоставить лекарство»"
+  - "СТО РЖД 03.011-2026, п. 10.4: неотложные просьбы выполняются в приоритетном порядке"
+briefing: |
+  Вагон 5, комфорт-класс. Поезд Москва — Санкт-Петербург идёт со скоростью 360 км/ч.
+  До Твери — 8 минут. Каждое ваше действие занимает время: следите за индикатором.
+initial:
+  loyalty: 60
+  safety: 60
+  vars:
+    minutes_to_station: 8
+hud:
+  minutes_to_station: До Твери, мин
+start: start
+interrupts:
+  - if: ["safety <= 10"]
+    next: end_critical
+
+nodes:
+  start:
+    type: choice
+    speaker: passenger
+    speaker_name: Сосед с места 12D
+    text: "«Проводник! Человеку плохо!» Пассажир места 12C бледен, держится за грудь и тяжело дышит."
+    competencies: [first_aid, escalation]
+    timer: 20
+    on_timeout:
+      effects: { safety: -20, vars: { minutes_to_station: -2 } }
+      feedback: "На скорости 360 км/ч минута промедления — 6 км от ближайшей помощи. Неотложные просьбы выполняются в приоритетном порядке (СТО 03.011, п. 10.4)."
+      next: worse
+    choices:
+      - id: go_and_call
+        text: "Подойти сразу: «Я рядом, сейчас приглашу начальника поезда и организуем помощь». Вызвать НП по рации."
+        quality: best
+        role_model: [acknowledge, solution]
+        effects: { safety: 15, loyalty: 10, flags: { chief_called: true }, vars: { minutes_to_station: -1 } }
+        feedback: "Именно так: быть рядом, не допускать паники и сразу вызвать начальника поезда любым доступным способом (сит. №19)."
+        next: assess
+      - id: first_aid_kit
+        text: "Сначала сходить в служебное купе за аптечкой, потом разбираться."
+        quality: poor
+        effects: { safety: -5, vars: { minutes_to_station: -3 } }
+        feedback: "Пассажира нельзя оставлять одного, а начальник поезда до сих пор не знает о ситуации. Сначала — вызвать НП, аптечку может принести коллега."
+        next: assess
+      - id: water_and_leave
+        text: "«Не волнуйтесь, сейчас пройдёт». Дать воды и вернуться к обслуживанию."
+        quality: bad
+        effects: { safety: -25, loyalty: -10, vars: { minutes_to_station: -1 } }
+        feedback: "Боль в груди — повод для немедленных действий. Проводник не оценивает, «пройдёт или нет», а организует помощь."
+        next: worse
+
+  assess:
+    type: choice
+    speaker: passenger
+    speaker_name: Сосед с места 12D
+    text: "Пассажир в сознании, говорит, что «давит в груди». Сосед достаёт блистер: «У меня есть таблетки от сердца, давайте дадим ему!»"
+    competencies: [first_aid, regulations]
+    timer: 25
+    on_timeout:
+      effects: { safety: -15, vars: { minutes_to_station: -2 } }
+      feedback: "Пока вы решали, сосед дал таблетку сам. Решение нужно принимать быстро и уверенно."
+      next: after_pill
+    choices:
+      - id: announce_medics
+        text: "«Пожалуйста, не давайте свои лекарства — мы не знаем, как он отреагирует». Попросить НП объявить по громкой связи, есть ли медики среди пассажиров."
+        quality: best
+        role_model: [rule, solution]
+        effects: { safety: 15, loyalty: 5, flags: { medics_announced: true }, vars: { minutes_to_station: -1 } }
+        feedback: "Верно: чужие и личные препараты давать нельзя — реакция непредсказуема, а ответственность ляжет на экипаж (сит. №28). Объявление о медиках — стандартный шаг."
+        next: medic_router
+      - id: allow_pill
+        text: "Разрешить соседу дать таблетку — он же хочет помочь."
+        quality: bad
+        effects: { safety: -30, loyalty: 5, vars: { minutes_to_station: -1 } }
+        feedback: "Нельзя допускать приём чужих лекарств: неизвестны диагноз, аллергии, противопоказания (сит. №28)."
+        next: after_pill
+      - id: own_pill
+        text: "Дать таблетку из своей личной аптечки."
+        quality: bad
+        effects: { safety: -30, vars: { minutes_to_station: -1 } }
+        feedback: "Проводник не выдаёт личные лекарственные препараты и не привлекает для этого коллег (сит. №28)."
+        next: after_pill
+      - id: comfort_only
+        text: "Усадить удобнее, расстегнуть воротник, обеспечить доступ воздуха и остаться рядом."
+        quality: good
+        effects: { safety: 5, loyalty: 10, vars: { minutes_to_station: -1 } }
+        feedback: "Хорошие действия первой помощи, но медиков среди пассажиров так и не поискали — можно было получить квалифицированную помощь раньше."
+        next: medic_router
+
+  worse:
+    type: choice
+    speaker: narrator
+    text: "Пассажиру хуже: он почти не отвечает. Соседи в панике, кто-то снимает происходящее на телефон."
+    competencies: [first_aid, escalation, communication]
+    timer: 15
+    on_timeout:
+      effects: { safety: -25, vars: { minutes_to_station: -3 } }
+      feedback: "Паника нарастает, помощь не организована. В критической ситуации проводник обязан действовать первым."
+      next: medic_router
+    choices:
+      - id: calm_and_call
+        text: "Громко и чётко: «Прошу сохранять спокойствие». Вызвать НП по рации и попросить объявить о медиках среди пассажиров."
+        quality: best
+        role_model: [rule, solution]
+        effects: { safety: 20, flags: { chief_called: true, medics_announced: true }, vars: { minutes_to_station: -1 } }
+        feedback: "Правильно: остановить панику чёткой формулировкой и сразу подключить НП и громкую связь (сит. №19, №45)."
+        next: medic_router
+      - id: run_for_chief
+        text: "Бежать в соседний вагон за начальником поезда, оставив пассажира."
+        quality: poor
+        effects: { safety: -10, flags: { chief_called: true }, vars: { minutes_to_station: -3 } }
+        feedback: "НП нужно вызывать любым оперативным способом (рация, поездная связь), не оставляя пассажира без присмотра."
+        next: medic_router
+      - id: argue_filming
+        text: "Потребовать от пассажира прекратить съёмку и вступить с ним в спор."
+        quality: bad
+        effects: { safety: -15, loyalty: -10, vars: { minutes_to_station: -1 } }
+        feedback: "Сейчас приоритет — жизнь и здоровье. Спор отнимает время и накаляет обстановку."
+        next: medic_router
+
+  after_pill:
+    type: choice
+    speaker: narrator
+    text: "Через минуту пассажиру стало хуже — возможно, это реакция на препарат."
+    competencies: [first_aid, escalation]
+    choices:
+      - id: report_pill
+        text: "Срочно вызвать НП и честно сообщить, что пассажир принял чужое лекарство. Попросить объявить о медиках."
+        quality: good
+        role_model: [solution]
+        effects: { safety: 10, flags: { chief_called: true, medics_announced: true }, vars: { minutes_to_station: -1 } }
+        feedback: "Правильно сообщить всё как есть: медикам важно знать, какой препарат принят."
+        next: medic_router
+      - id: hide_pill
+        text: "Промолчать о таблетке, чтобы не было проблем, и ждать."
+        quality: bad
+        effects: { safety: -20, vars: { minutes_to_station: -2 } }
+        feedback: "Сокрытие информации может стоить пассажиру здоровья. Медики должны знать о принятом препарате."
+        next: medic_router
+
+  medic_router:
+    type: router
+    routes:
+      - if: ["flags.medics_announced == true"]
+        next: doctor_found
+      - next: no_doctor
+
+  doctor_found:
+    type: choice
+    speaker: passenger
+    speaker_name: Врач из вагона 2
+    text: "По громкой связи откликнулся врач из вагона 2: «Нужна госпитализация, и как можно скорее»."
+    competencies: [escalation, regulations]
+    choices:
+      - id: tver_ambulance
+        text: "Через НП передать, чтобы на станцию Тверь к вагону 5 вызвали скорую. Освободить проход к выходу."
+        quality: best
+        role_model: [solution]
+        if: ["vars.minutes_to_station >= 3"]
+        effects: { safety: 15, flags: { station_medics: true } }
+        feedback: "Верно: медиков вызывают на ближайшую станцию, заранее готовят выход (сит. №28)."
+        next: neighbours
+      - id: novgorod_ambulance
+        text: "До Твери уже не успеть договориться — через НП вызвать скорую к Великому Новгороду."
+        quality: good
+        role_model: [solution]
+        if: ["vars.minutes_to_station < 3"]
+        effects: { safety: -10, flags: { station_medics: true } }
+        feedback: "Помощь будет, но позже: из-за промедления ближайшая станция упущена. Время решает."
+        next: neighbours
+      - id: go_to_spb
+        text: "Предложить доехать до Санкт-Петербурга — там больницы лучше."
+        quality: bad
+        effects: { safety: -30 }
+        feedback: "Помощь нужна на ближайшей станции. Решение о маршруте принимают медики и НП, а не комфорт выбора больницы."
+        next: neighbours
+      - id: emergency_stop
+        text: "Потребовать от НП немедленно остановить поезд в поле."
+        quality: poor
+        effects: { safety: -5, vars: { minutes_to_station: -1 } }
+        feedback: "Остановка вне станции не приблизит скорую. Решение принимают НП и машинист; задача проводника — организовать встречу медиков на станции."
+        next: neighbours
+
+  no_doctor:
+    type: choice
+    speaker: narrator
+    text: "Медиков среди пассажиров не нашлось или их никто не искал. Пассажир в сознании, но состояние тяжёлое."
+    competencies: [escalation, first_aid]
+    timer: 20
+    on_timeout:
+      effects: { safety: -20, vars: { minutes_to_station: -3 } }
+      feedback: "Без решения скорая не будет вызвана вовремя."
+      next: neighbours
+    choices:
+      - id: tver_ambulance
+        text: "Через НП вызвать скорую на станцию Тверь к вагону 5 и остаться рядом с пассажиром."
+        quality: best
+        role_model: [solution]
+        if: ["vars.minutes_to_station >= 3"]
+        effects: { safety: 15, flags: { station_medics: true } }
+        feedback: "Правильно: медики на ближайшей станции и постоянное наблюдение за пассажиром."
+        next: neighbours
+      - id: novgorod_ambulance
+        text: "До Твери не успеть — через НП вызвать скорую к Великому Новгороду и остаться рядом."
+        quality: good
+        role_model: [solution]
+        if: ["vars.minutes_to_station < 3"]
+        effects: { safety: -10, flags: { station_medics: true } }
+        feedback: "Помощь организована, но с опозданием: ближайшая станция упущена из-за промедления."
+        next: neighbours
+      - id: watch
+        text: "Понаблюдать ещё немного — вдруг станет лучше."
+        quality: bad
+        effects: { safety: -25, vars: { minutes_to_station: -3 } }
+        feedback: "Ожидание при боли в груди опасно. Скорую вызывают сразу."
+        next: neighbours
+
+  neighbours:
+    type: choice
+    speaker: passenger
+    speaker_name: Пассажиры рядом
+    text: "Поезд подходит к станции. Соседние пассажиры взволнованы: «Что с ним? Мы из-за этого опоздаем?»"
+    competencies: [communication]
+    choices:
+      - id: assure
+        text: "«Благодарю вас за понимание и помощь. Пассажиру оказывают помощь, после стоянки поезд продолжит движение»."
+        quality: best
+        role_model: [assure, rule]
+        effects: { loyalty: 15 }
+        feedback: "Спокойная, достоверная информация и благодарность снижают тревогу в вагоне."
+        next: final
+      - id: diagnosis
+        text: "Подробно рассказать, что, по словам врача, у пассажира, вероятно, сердечный приступ."
+        quality: poor
+        effects: { loyalty: -5 }
+        feedback: "Сведения о здоровье пассажира не обсуждаются с посторонними — это его личные данные."
+        next: final
+      - id: not_your_business
+        text: "«Это вас не касается, займите свои места»."
+        quality: bad
+        effects: { loyalty: -20 }
+        feedback: "Грубость недопустима. Пассажиры вправе получить достоверную информацию о движении поезда."
+        next: final
+
+  final:
+    type: router
+    routes:
+      - if: ["flags.station_medics == true", "safety >= 60"]
+        next: end_ok
+      - if: ["flags.station_medics == true"]
+        next: end_partial
+      - next: end_fail
+
+  end_ok:
+    type: ending
+    outcome: success
+    title: Помощь оказана вовремя
+    text: "На станции пассажира встретила бригада скорой помощи. Вы действовали быстро, не допустили паники и не нарушили правил — врачи отметили, что время было выиграно."
+  end_partial:
+    type: ending
+    outcome: partial
+    title: Помощь оказана с задержкой
+    text: "Пассажира передали медикам, но из-за ошибок и промедления помощь пришла позже, чем могла. Разберите решения ниже: где можно было сэкономить минуты?"
+  end_fail:
+    type: ending
+    outcome: fail
+    title: Помощь не организована
+    text: "Скорая помощь не была вызвана на станцию. Пассажира госпитализировали только на конечной — это серьёзное нарушение порядка действий."
+  end_critical:
+    type: ending
+    outcome: fail
+    title: Состояние стало критическим
+    text: "Из-за промедления и ошибок состояние пассажира резко ухудшилось. Поезд совершил вынужденную остановку для передачи пассажира медикам."

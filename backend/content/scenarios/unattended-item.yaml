@@ -1,0 +1,207 @@
+id: unattended-item
+version: 1
+title: Бесхозная вещь
+summary: Пассажир замечает сумку, владелец которой вышел на станции. Действовать строго по алгоритму — и не допустить паники.
+category: safety
+difficulty: 3
+service_class: standard
+sources:
+  - "Ситуации на борту, №41 «Пассажир сообщает о бесхозной вещи»"
+  - "Ситуации на борту, №45 «Пассажир паникует»"
+briefing: |
+  Вагон 10, стандарт-класс, поезд отправился из Твери.
+  В вагоне почти 90 пассажиров, до Великого Новгорода больше часа.
+initial:
+  loyalty: 60
+  safety: 50
+start: start
+interrupts:
+  - if: ["safety <= 10"]
+    next: end_emergency
+
+nodes:
+  start:
+    type: choice
+    speaker: passenger
+    speaker_name: Пассажир места 30A
+    text: "«Там под сиденьем чёрная сумка. Её оставил мужчина, который вышел в Твери»."
+    competencies: [safety, communication]
+    timer: 20
+    on_timeout:
+      effects: { safety: -15 }
+      feedback: "Сообщение о бесхозной вещи требует немедленной реакции — такова логика транспортной безопасности."
+      next: nobody_claims
+    choices:
+      - id: thank_and_check
+        text: "«Благодарю за бдительность, сейчас я уточню, кому принадлежит оставленная вещь». Осмотреть сумку, не трогая, и спросить соседей."
+        quality: best
+        role_model: [assure, solution]
+        effects: { safety: 15, loyalty: 10 }
+        feedback: "Поблагодарить пассажира, не трогать вещь и выяснить владельца опросом — по алгоритму (сит. №41)."
+        next: nobody_claims
+      - id: take_bag
+        text: "Взять сумку и отнести в служебное купе, чтобы не мешала."
+        quality: bad
+        effects: { safety: -30, flags: { touched: true } }
+        feedback: "Бесхозную вещь нельзя трогать и перемещать: неизвестно, что внутри (сит. №41)."
+        next: touched
+      - id: open_bag
+        text: "Открыть сумку, чтобы найти документы владельца."
+        quality: bad
+        effects: { safety: -40, flags: { touched: true } }
+        feedback: "Вскрывать подозрительный предмет категорически запрещено. Это работа сотрудников транспортной безопасности."
+        next: touched
+
+  nobody_claims:
+    type: choice
+    speaker: narrator
+    text: "Никто из пассажиров не признаёт сумку. Соседи начинают поглядывать на неё с тревогой."
+    competencies: [escalation, safety]
+    timer: 20
+    on_timeout:
+      effects: { safety: -20 }
+      feedback: "Каждая минута без сообщения ПТБ — потерянное время для проверки предмета."
+      next: panic
+    choices:
+      - id: report_ptb
+        text: "По поездной радиосвязи сообщить НП и ПТБ: вагон 10, место 30, чёрная сумка. Пассажирам: «Уважаемые пассажиры, просьба не приближаться к предмету»."
+        quality: best
+        role_model: [rule, solution]
+        effects: { safety: 20, flags: { reported: true } }
+        feedback: "Не трогать, сообщить НП и ПТБ по поездной радиосвязи, отвести пассажиров — алгоритм выполнен (сит. №41)."
+        next: cordon
+      - id: announce_owner
+        text: "Попросить объявить по громкой связи, что найдена сумка, и продолжить обслуживание."
+        quality: poor
+        effects: { safety: -10 }
+        feedback: "Объявление о находке — не замена сообщению в ПТБ. Предмет остаётся без контроля рядом с людьми."
+        next: wait_owner
+      - id: bomb_phone
+        text: "Позвонить НП по мобильному и при пассажирах сказать: «Похоже, у нас бомба»."
+        quality: bad
+        effects: { safety: -10, loyalty: -20 }
+        feedback: "Слова «бомба» при пассажирах вызывают панику. Сообщать нужно по поездной радиосвязи, сухо и по существу."
+        next: panic
+
+  touched:
+    type: choice
+    speaker: narrator
+    text: "Сумка у вас в руках, она тяжёлая. Вы понимаете, что нарушили алгоритм."
+    competencies: [escalation, safety]
+    choices:
+      - id: put_and_report
+        text: "Аккуратно поставить сумку на пол у стены, отвести пассажиров и сообщить НП и ПТБ, что вещь перемещали."
+        quality: good
+        role_model: [solution]
+        effects: { safety: 15, flags: { reported: true } }
+        feedback: "Правильно честно сообщить о перемещении — это важно для сотрудников безопасности. Но трогать вещь было нельзя."
+        next: cordon
+      - id: hide_it
+        text: "Никому не говорить, оставить сумку в служебном купе до конечной."
+        quality: bad
+        effects: { safety: -20 }
+        feedback: "Предмет остаётся непроверенным рядом с людьми. О бесхозной вещи НП и ПТБ должны узнать сразу."
+        next: final
+
+  wait_owner:
+    type: choice
+    speaker: passenger
+    speaker_name: Пассажир места 30A
+    text: "Владелец так и не объявился. Пассажир 30A снова подходит: «Может, всё-таки кого-нибудь позвать?»"
+    competencies: [escalation]
+    choices:
+      - id: report_now
+        text: "Сообщить НП и ПТБ по поездной радиосвязи и попросить пассажиров пересесть подальше от сумки."
+        quality: good
+        role_model: [solution]
+        effects: { safety: 15, flags: { reported: true } }
+        feedback: "Верное действие, но с опозданием: это нужно было сделать сразу, как только владелец не нашёлся."
+        next: cordon
+      - id: wait
+        text: "«Не волнуйтесь, доедем до Новгорода — там разберутся»."
+        quality: bad
+        effects: { safety: -20, loyalty: -10 }
+        feedback: "Больше часа с непроверенным предметом в вагоне — прямое нарушение алгоритма."
+        next: final
+
+  panic:
+    type: choice
+    speaker: narrator
+    text: "Пассажиры услышали слово «бомба». Кто-то вскакивает, кто-то пытается пройти к дверям, один тянется к стоп-крану."
+    competencies: [conflict, communication, safety]
+    timer: 15
+    on_timeout:
+      effects: { safety: -20 }
+      feedback: "В панике люди ждут чётких указаний от персонала. Молчание их усиливает."
+      next: final
+    choices:
+      - id: clear_instructions
+        text: "Чётко и спокойно: «Пожалуйста, сохраняйте спокойствие и следуйте рекомендациям персонала. Пройдите в соседний вагон». Сообщить НП и ПТБ."
+        quality: best
+        role_model: [rule, solution]
+        effects: { safety: 20, loyalty: 5, flags: { reported: true } }
+        feedback: "Чёткие, понятные формулировки и спокойный тон останавливают панику (сит. №45)."
+        next: cordon
+      - id: shout
+        text: "Громко кричать, чтобы все успокоились и сели на места."
+        quality: bad
+        effects: { safety: -15 }
+        feedback: "Крик воспринимается как подтверждение опасности и усиливает панику."
+        next: final
+
+  cordon:
+    type: choice
+    speaker: passenger
+    speaker_name: Пассажиры рядом
+    text: "Сотрудники ПТБ идут к вагону. Пассажиры рядом с сумкой спрашивают: «Это опасно? Что нам делать?»"
+    competencies: [communication, safety]
+    choices:
+      - id: calm_move
+        text: "«Благодарю вас за понимание. Предмет проверят сотрудники безопасности. Прошу пройти в соседний вагон — там есть свободные места»."
+        quality: best
+        role_model: [assure, rule, solution]
+        effects: { loyalty: 15, safety: 10 }
+        feedback: "Спокойно, без домыслов, с конкретным указанием, куда пройти. Никаких ложных обещаний."
+        next: final
+      - id: explosive
+        text: "«Скорее всего, там взрывчатка, уходите быстрее!»"
+        quality: bad
+        effects: { loyalty: -15, safety: -15 }
+        feedback: "Домыслы о содержимом сеют панику. Сообщайте только достоверную информацию."
+        next: final
+      - id: nothing_scary
+        text: "«Ничего страшного, наверняка просто кто-то забыл». Оставить пассажиров на местах."
+        quality: poor
+        effects: { safety: -10, loyalty: 5 }
+        feedback: "Ложное успокоение: вы не знаете, что внутри. Пассажиров нужно отвести от предмета до проверки."
+        next: final
+
+  final:
+    type: router
+    routes:
+      - if: ["flags.reported == true", "safety >= 70"]
+        next: end_ok
+      - if: ["flags.reported == true"]
+        next: end_partial
+      - next: end_fail
+
+  end_ok:
+    type: ending
+    outcome: success
+    title: Алгоритм выполнен
+    text: "Сотрудники ПТБ проверили сумку — внутри оказались забытые вещи. Вы действовали строго по алгоритму и не допустили паники."
+  end_partial:
+    type: ending
+    outcome: partial
+    title: Предмет проверен, но с нарушениями
+    text: "Сумку проверили — угрозы не было. Однако ошибки в порядке действий могли стоить дорого, если бы угроза была реальной."
+  end_fail:
+    type: ending
+    outcome: fail
+    title: Угроза не отработана
+    text: "О бесхозной вещи не узнали сотрудники транспортной безопасности. Если бы в сумке было опасное содержимое, последствия были бы тяжёлыми."
+  end_emergency:
+    type: ending
+    outcome: fail
+    title: Экстренное торможение
+    text: "В вагоне началась паника, пассажир сорвал стоп-кран. Поезд экстренно затормозил, несколько человек получили ушибы."

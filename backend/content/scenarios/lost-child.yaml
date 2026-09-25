@@ -1,0 +1,164 @@
+id: lost-child
+version: 1
+title: Потерялся ребёнок
+summary: Маленький ребёнок плачет у тамбура — он потерял маму. Важно не оставить его одного и не раскрыть лишнего.
+category: accessibility
+difficulty: 1
+service_class: comfort
+sources:
+  - "Ситуации на борту, №30 «Ребёнок потерялся»"
+  - "Ситуации на борту, №37 — не обвинять родителей"
+  - "СТО РЖД 03.011-2026, п. 7.6: услуги пассажирам с детьми"
+briefing: |
+  Вагон 6, комфорт-класс, рядом — вагон с игровой комнатой.
+  Поезд идёт к Великому Новгороду.
+initial:
+  loyalty: 55
+  safety: 55
+start: start
+interrupts:
+  - if: ["safety <= 10"]
+    next: end_danger
+
+nodes:
+  start:
+    type: choice
+    speaker: child
+    speaker_name: Ребёнок, около 6 лет
+    text: "У дверей тамбура плачет ребёнок: «Я маму потерял…»"
+    competencies: [accessibility, communication]
+    timer: 30
+    on_timeout:
+      effects: { safety: -10 }
+      feedback: "Ребёнок у дверей тамбура без присмотра — ситуация, требующая немедленного участия."
+      next: ask
+    choices:
+      - id: stay_with
+        text: "Присесть на уровень ребёнка: «Не волнуйся, я помогу найти маму. Побудь, пожалуйста, рядом со мной»."
+        quality: best
+        role_model: [acknowledge, solution]
+        effects: { loyalty: 15, safety: 15 }
+        feedback: "Успокоить и оставаться с ребёнком — первое правило (сит. №30)."
+        next: ask
+      - id: go_search
+        text: "«Иди поищи маму по вагонам, она где-то здесь»."
+        quality: bad
+        effects: { safety: -30 }
+        feedback: "Ребёнка нельзя отправлять одного по составу: тамбуры, двери, стоянки — это опасно."
+        next: child_gone
+      - id: play_room
+        text: "Отвести в игровую комнату и оставить там, пока ищете родителей."
+        quality: poor
+        effects: { safety: -15 }
+        feedback: "Игровая комната — не место передачи под ответственность. Ребёнок должен оставаться с сотрудником."
+        next: ask
+
+  ask:
+    type: choice
+    speaker: child
+    speaker_name: Ребёнок, около 6 лет
+    text: "Ребёнок немного успокоился и рассказывает, что ехал с мамой «в вагоне, где кресла оранжевые» — это стандарт-класс."
+    competencies: [accessibility, regulations, escalation]
+    choices:
+      - id: neutral_announcement
+        text: "Сообщить НП и предложить объявление без лишних данных: «Сопровождающих ребёнка просим подойти к проводнику вагона 6»."
+        quality: best
+        role_model: [solution]
+        effects: { safety: 15 }
+        feedback: "Объявление делается без лишних персональных данных — чтобы информацией не воспользовались посторонние (сит. №30)."
+        next: reunion
+      - id: full_name
+        text: "Попросить НП объявить полное имя и фамилию ребёнка, возраст и описание одежды."
+        quality: poor
+        effects: { safety: 5, flags: { data_disclosed: true } }
+        feedback: "Лишние персональные данные ребёнка в объявлении на весь поезд — риск. Достаточно указать, куда подойти."
+        next: reunion
+      - id: to_chief
+        text: "Проводить ребёнка до купе начальника поезда и передать ему информацию."
+        quality: good
+        role_model: [solution]
+        effects: { safety: 10 }
+        feedback: "Допустимый вариант из регламента (сит. №30). Но сообщить НП по рации и остаться на месте — быстрее."
+        next: reunion
+
+  child_gone:
+    type: choice
+    speaker: narrator
+    text: "Через пару минут вы понимаете, что ребёнка нигде не видно — ни в вагоне, ни в тамбуре."
+    competencies: [safety, escalation]
+    timer: 20
+    on_timeout:
+      effects: { safety: -20 }
+      feedback: "Пропавший ребёнок в движущемся поезде — чрезвычайная ситуация, счёт идёт на минуты."
+      next: final
+    choices:
+      - id: raise_alarm
+        text: "Немедленно сообщить НП, описать ребёнка и попросить организовать поиск по составу."
+        quality: good
+        role_model: [solution]
+        effects: { safety: 20 }
+        feedback: "Верно, но ситуации можно было избежать, не отпуская ребёнка одного."
+        next: reunion
+      - id: keep_working
+        text: "Продолжить обслуживание — ребёнок наверняка нашёл маму."
+        quality: bad
+        effects: { safety: -30 }
+        feedback: "Вы не знаете, где ребёнок. Бездействие недопустимо."
+        next: final
+
+  reunion:
+    type: choice
+    speaker: passenger
+    speaker_name: Мама ребёнка
+    text: "Прибегает взволнованная мама и с порога кричит на вас: «Почему мой ребёнок ходит один?! Куда вы смотрите?!»"
+    competencies: [communication, conflict]
+    choices:
+      - id: full_model
+        text: "«Понимаю Ваше волнение. Ребёнок в безопасности, всё время был со мной. Обращаю Ваше внимание: в поезде важно держать малыша рядом. Благодарю за понимание»."
+        quality: best
+        role_model: [acknowledge, rule, assure]
+        effects: { loyalty: 20 }
+        feedback: "Признали чувства, мягко обозначили правило без обвинений, заверили — эмоции снимаются."
+        next: final
+      - id: blame
+        text: "«Это вы должны следить за своим ребёнком, а не я!»"
+        quality: bad
+        effects: { loyalty: -25 }
+        feedback: "Обвинять родителей нельзя (сит. №37) — даже если формально вы правы."
+        next: final
+      - id: silent
+        text: "Молча передать ребёнка маме и уйти."
+        quality: poor
+        effects: { loyalty: -5 }
+        feedback: "Эмоции мамы остались без ответа. Не хватило шагов «Признать» и «Заверить»."
+        next: final
+
+  final:
+    type: router
+    routes:
+      - if: ["safety >= 70", "loyalty >= 60", "flags.data_disclosed == false"]
+        next: end_ok
+      - if: ["safety >= 40"]
+        next: end_partial
+      - next: end_fail
+
+  end_ok:
+    type: ending
+    outcome: success
+    title: Семья воссоединилась
+    text: "Ребёнок всё время был в безопасности, мама успокоилась и поблагодарила вас."
+  end_partial:
+    type: ending
+    outcome: partial
+    title: Ребёнок найден, но не всё прошло гладко
+    text: "Ребёнок вернулся к маме, но были ошибки: риск для ребёнка, лишние персональные данные в объявлении или неудачный разговор с мамой."
+  end_fail:
+    type: ending
+    outcome: fail
+    title: Ребёнок нашёлся без вашего участия
+    text: "Ребёнка нашёл другой сотрудник в соседнем вагоне у дверей. Мама написала жалобу."
+  end_danger:
+    type: ending
+    outcome: fail
+    title: Опасная ситуация
+    text: "Ребёнка нашли в тамбуре у дверей во время стоянки. Беда была в шаге — ребёнка нельзя оставлять одного."

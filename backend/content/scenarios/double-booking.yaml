@@ -1,0 +1,156 @@
+id: double-booking
+version: 1
+title: Два пассажира на одно место
+summary: Из-за сбоя продаж два пассажира бизнес-класса претендуют на одно кресло. Нельзя занимать сторону.
+category: conflict
+difficulty: 2
+service_class: business
+sources:
+  - "Ситуации на борту, №33 «Два пассажира на одно место»"
+  - "Ситуации на борту, №23 «Пассажиры спорят между собой»"
+  - "СТО РЖД 03.011-2026, п. 7.1.3: повышение класса обслуживания при наличии мест"
+briefing: |
+  Вагон 2, бизнес-класс. Поезд только что отправился из Москвы.
+  Возле кресла 7A на повышенных тонах разговаривают два пассажира.
+initial:
+  loyalty: 50
+  safety: 60
+start: start
+interrupts:
+  - if: ["safety <= 15"]
+    next: end_fight
+
+nodes:
+  start:
+    type: choice
+    speaker: passenger
+    speaker_name: Пассажир с билетом на 7A
+    text: "Пассажир в проходе, указывая на сидящего в кресле 7A: «Это моё место, я его за месяц бронировал!» Сидящий отвечает: «У меня тоже билет на 7A, я никуда не пойду»."
+    competencies: [conflict, communication]
+    timer: 30
+    on_timeout:
+      effects: { loyalty: -15, safety: -10 }
+      feedback: "Пока проводник молчит, спор разгорается. Вмешиваться нужно сразу, спокойно и нейтрально."
+      next: escalation
+    choices:
+      - id: check_tickets
+        text: "«Я вижу, что ситуация требует уточнения. Давайте решим вопрос спокойно — позвольте ваши билеты»."
+        quality: best
+        role_model: [acknowledge, solution]
+        effects: { loyalty: 10, safety: 10, flags: { docs_checked: true } }
+        feedback: "Нейтральная позиция и проверка документов — первое, что нужно сделать (сит. №33, №23)."
+        next: docs
+      - id: first_sat
+        text: "Попросить сидящего пассажира освободить место: пусть сначала разберётся со своим билетом."
+        quality: bad
+        effects: { loyalty: -20, safety: -10 }
+        feedback: "Проводник не занимает сторону, пока не проверены документы обоих пассажиров (сит. №23)."
+        next: escalation
+      - id: sit_anywhere
+        text: "Сказать пассажиру в проходе: «Сядьте пока куда-нибудь, потом разберёмся»."
+        quality: poor
+        effects: { loyalty: -15 }
+        feedback: "Пассажир с действительным билетом имеет право на своё место. «Потом» — не решение, а отсрочка конфликта."
+        next: escalation
+
+  escalation:
+    type: choice
+    speaker: narrator
+    text: "Спор усиливается: сидящий пассажир встаёт, оба повышают голос, соседи просят их успокоиться."
+    competencies: [conflict, escalation]
+    timer: 20
+    on_timeout:
+      effects: { safety: -20 }
+      feedback: "Конфликт между пассажирами не утихнет сам — его нужно развести."
+      next: final
+    choices:
+      - id: separate
+        text: "Развести коммуникацию: пригласить одного из пассажиров к служебному купе и спокойно попросить у обоих билеты."
+        quality: good
+        role_model: [solution]
+        effects: { safety: 10, flags: { docs_checked: true } }
+        feedback: "Разводить участников — верный приём (сит. №23). Но лучше было сделать это до того, как конфликт разгорелся."
+        next: docs
+      - id: shout
+        text: "Повысить голос: «Прекратите оба, или я вызову полицию!»"
+        quality: bad
+        effects: { safety: -15, loyalty: -10 }
+        feedback: "Крик и угрозы только добавляют напряжения. Не провоцировать — ключевое правило в конфликте."
+        next: final
+
+  docs:
+    type: choice
+    speaker: system
+    text: "Проверка в мобильном терминале: оба билета действительны, на одну дату и одно место 7A. Похоже на сбой в системе продаж."
+    competencies: [escalation, regulations]
+    choices:
+      - id: invite_chief
+        text: "«Я приглашу начальника поезда для уточнения». Вызвать НП, попросить пассажиров немного подождать."
+        quality: best
+        role_model: [solution]
+        effects: { safety: 10, flags: { chief_called: true } }
+        feedback: "Сбой оформления — зона ответственности НП: он уточняет информацию у ответственных лиц (сит. №33)."
+        next: chief_options
+      - id: reseat_self
+        text: "Самостоятельно пересадить одного из пассажиров на любое свободное место бизнес-класса."
+        quality: poor
+        effects: { loyalty: 5 }
+        feedback: "Свободное место может быть продано со следующей станции — тогда конфликт повторится. Решение о пересадке принимает НП."
+        next: final
+      - id: by_purchase_time
+        text: "Решить по времени покупки: кто купил раньше, тот и сидит."
+        quality: poor
+        effects: { loyalty: -10 }
+        feedback: "Такого правила нет. Оба пассажира пострадали от сбоя, и решать вопрос должен НП."
+        next: final
+
+  chief_options:
+    type: choice
+    speaker: chief
+    speaker_name: Начальник поезда
+    text: "НП подтвердил сбой. В вагоне первого класса есть свободное место — пассажиру предлагают повысить класс без доплаты. Сообщить об этом поручено вам."
+    competencies: [communication]
+    choices:
+      - id: full_model
+        text: "«Приношу извинения за неудобства. Информирую Вас: из-за сбоя начальник поезда предлагает Вам место в первом классе без доплаты. Я провожу Вас и помогу с багажом. Благодарю за понимание»."
+        quality: best
+        role_model: [acknowledge, rule, solution, assure]
+        effects: { loyalty: 25 }
+        feedback: "Все четыре шага ролевой модели: признали, проинформировали, предложили, заверили. Конфликт превратился в приятный сюрприз."
+        next: final
+      - id: lucky
+        text: "«Вам повезло — идите в первый класс, вагон 1»."
+        quality: poor
+        effects: { loyalty: 5 }
+        feedback: "Решение хорошее, но подача — нет: ни извинений за сбой, ни помощи с багажом."
+        next: final
+
+  final:
+    type: router
+    routes:
+      - if: ["loyalty >= 70", "safety >= 50"]
+        next: end_ok
+      - if: ["loyalty >= 40"]
+        next: end_partial
+      - next: end_fail
+
+  end_ok:
+    type: ending
+    outcome: success
+    title: Конфликт урегулирован
+    text: "Оба пассажира едут на своих местах, один из них — в первом классе. Вместо жалобы — благодарность в книге отзывов."
+  end_partial:
+    type: ending
+    outcome: partial
+    title: Места распределены, но пассажиры недовольны
+    text: "Вопрос решён, однако пассажиры запомнили неловкий спор. Посмотрите, где можно было быть нейтральнее."
+  end_fail:
+    type: ending
+    outcome: fail
+    title: Жалоба на обслуживание
+    text: "Один из пассажиров всю поездку простоял в тамбуре и оставил жалобу через приложение."
+  end_fight:
+    type: ending
+    outcome: fail
+    title: Спор перешёл в потасовку
+    text: "Пассажиры сцепились в проходе, пришлось вызывать сотрудников ПТБ. Промедление и провокации сделали своё дело."

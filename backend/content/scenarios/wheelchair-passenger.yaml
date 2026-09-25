@@ -1,0 +1,165 @@
+id: wheelchair-passenger
+version: 1
+title: Пассажир на кресле-коляске
+summary: Посадка, размещение и обслуживание маломобильного пассажира — от платформы до прибытия.
+category: accessibility
+difficulty: 2
+service_class: comfort
+sources:
+  - "СТО РЖД 03.014-2026, п. 6.2–6.5: проезд маломобильных пассажиров"
+  - "СТО РЖД 03.014-2026, п. 8.7–8.9: помощь при размещении, питание на место, навыки персонала"
+  - "СТО РЖД 03.011-2026, п. 9.13: информирование о прибытии за 10–15 минут"
+briefing: |
+  Москва, посадка на поезд до Санкт-Петербурга. Вагон 4, комфорт-класс,
+  в нём есть специально выделенное место для пассажира на кресле-коляске.
+initial:
+  loyalty: 50
+  safety: 60
+start: start
+
+nodes:
+  start:
+    type: choice
+    speaker: passenger
+    speaker_name: Пассажир на кресле-коляске
+    text: "К вагону подъезжает пассажир на кресле-коляске: «Здравствуйте, у меня место для маломобильных пассажиров, но я не уверен, что смогу заехать»."
+    competencies: [accessibility, communication]
+    timer: 25
+    on_timeout:
+      effects: { loyalty: -10 }
+      feedback: "Пассажир ждёт на платформе, пока вы решаете. Помощь маломобильным пассажирам при посадке — обязанность персонала."
+      next: seating
+    choices:
+      - id: lift
+        text: "«Добрый день! Сейчас помогу — используем подъёмное устройство. Позвольте Ваш билет»."
+        quality: best
+        role_model: [acknowledge, solution]
+        effects: { loyalty: 15, safety: 10 }
+        feedback: "Приветливо, с конкретным решением: подъёмное устройство предназначено именно для этого (СТО 03.014, п. 6.1)."
+        next: seating
+      - id: transfer_at_door
+        text: "Предложить пересесть в обычное кресло прямо у входа, а коляску занести сложенной."
+        quality: poor
+        effects: { loyalty: -10 }
+        feedback: "Пассажир вправе ехать в кресле-коляске на выделенном месте. Решение принимается вместе с ним, а не за него."
+        next: seating
+      - id: other_car
+        text: "«Поищите другой вагон, у нас тут узко»."
+        quality: bad
+        effects: { loyalty: -30 }
+        feedback: "Отказ в помощи и отправка «куда-то» недопустимы: в вагоне есть место для МГН, а персонал обязан помочь (СТО 03.014, п. 8.1)."
+        next: complaint
+
+  complaint:
+    type: choice
+    speaker: passenger
+    speaker_name: Пассажир на кресле-коляске
+    text: "Пассажир расстроен: «Я специально заранее оформлял место для маломобильных пассажиров именно в этом вагоне!»"
+    competencies: [accessibility, communication]
+    choices:
+      - id: apologize
+        text: "«Приношу извинения, я ошибся. Сейчас помогу с посадкой» — и развернуть подъёмное устройство."
+        quality: good
+        role_model: [acknowledge, solution]
+        effects: { loyalty: 15 }
+        feedback: "Признать ошибку и сразу исправить — правильно. Но первое впечатление уже испорчено."
+        next: seating
+      - id: insist
+        text: "Настаивать, что в соседнем вагоне будет удобнее."
+        quality: bad
+        effects: { loyalty: -20 }
+        feedback: "Пассажир оформил конкретное место, и отказывать ему в нём нет оснований."
+        next: end_fail
+
+  seating:
+    type: choice
+    speaker: passenger
+    speaker_name: Пассажир на кресле-коляске
+    text: "Пассажир в вагоне. С собой у него чемодан и рюкзак, на улице прохладно — он в куртке."
+    competencies: [accessibility, safety]
+    choices:
+      - id: ask_preferences
+        text: "Спросить, как удобнее: остаться в коляске на выделенном месте или пересесть. Помочь разместить чемодан и повесить куртку в доступном месте."
+        quality: best
+        role_model: [solution]
+        effects: { loyalty: 15, safety: 10 }
+        feedback: "Помощь при размещении с вещами и учёт пожеланий пассажира — требование СТО 03.014 (п. 6.4, 8.7)."
+        next: service
+      - id: transfer_without_asking
+        text: "Сразу пересадить пассажира в кресло, не спрашивая, — «так будет удобнее»."
+        quality: bad
+        effects: { loyalty: -20, safety: -5 }
+        feedback: "Любая физическая помощь — только с согласия пассажира. Решать за него нельзя."
+        next: service
+      - id: bag_in_aisle
+        text: "Поставить чемодан в проходе рядом — так ему будет удобнее доставать вещи."
+        quality: poor
+        effects: { safety: -15, loyalty: 5 }
+        feedback: "Проход должен оставаться свободным в целях безопасности (сит. №14). Есть места для багажа."
+        next: service
+
+  service:
+    type: choice
+    speaker: passenger
+    speaker_name: Пассажир на кресле-коляске
+    text: "Через час пассажир просит перекусить. Вагон-бистро — в другом конце состава."
+    competencies: [accessibility, regulations]
+    choices:
+      - id: order_to_seat
+        text: "Принести меню бистро и предложить доставить заказ на место."
+        quality: best
+        role_model: [solution]
+        effects: { loyalty: 20 }
+        feedback: "Маломобильным пассажирам должна быть доступна возможность заказа питания на место (СТО 03.014, п. 8.8)."
+        next: arrival
+      - id: explain_route
+        text: "Объяснить, как проехать до бистро через состав."
+        quality: poor
+        effects: { loyalty: -10 }
+        feedback: "Перемещение через весь поезд на коляске затруднительно. Для этого и предусмотрен заказ на место."
+        next: arrival
+
+  arrival:
+    type: choice
+    speaker: narrator
+    text: "Поезд приближается к Санкт-Петербургу."
+    competencies: [accessibility, communication]
+    choices:
+      - id: prepare_early
+        text: "За 15 минут до прибытия предупредить пассажира, помочь собрать вещи, подготовить подъёмник и уточнить у НП, заказана ли встреча на вокзале."
+        quality: best
+        role_model: [assure, solution]
+        effects: { loyalty: 15, safety: 10 }
+        feedback: "Заблаговременное информирование о прибытии и подготовка высадки — забота, которую пассажир запомнит (СТО 03.011, п. 9.13)."
+        next: final
+      - id: after_everyone
+        text: "Подойти, когда все пассажиры уже выйдут."
+        quality: poor
+        effects: { loyalty: -10 }
+        feedback: "Пассажир не знал, когда и как его высадят. Высадку нужно готовить заранее."
+        next: final
+
+  final:
+    type: router
+    routes:
+      - if: ["loyalty >= 75", "safety >= 60"]
+        next: end_ok
+      - if: ["loyalty >= 45"]
+        next: end_partial
+      - next: end_fail
+
+  end_ok:
+    type: ending
+    outcome: success
+    title: Безбарьерная поездка
+    text: "Пассажир отметил, что впервые поездка прошла без единой трудности, и оставил благодарность экипажу."
+  end_partial:
+    type: ending
+    outcome: partial
+    title: Доехал, но с неудобствами
+    text: "Пассажир добрался, но ему пришлось сталкиваться с барьерами, которых можно было избежать."
+  end_fail:
+    type: ending
+    outcome: fail
+    title: Жалоба на недоступность услуг
+    text: "Пассажир оставил жалобу: помощь при посадке и в пути не была оказана как положено."

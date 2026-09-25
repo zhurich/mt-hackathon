@@ -1,0 +1,210 @@
+id: vape-smoking
+version: 1
+title: Электронная сигарета в салоне
+summary: Пассажир бизнес-класса курит вейп прямо в кресле и уверен, что «пар никому не мешает».
+category: safety
+difficulty: 2
+service_class: business
+sources:
+  - "Ситуации на борту, №20 «Пассажир курит на борту (включая электронные сигареты)»"
+  - "Ситуации на борту, №12 — замечания делать индивидуально, не привлекая внимания"
+briefing: |
+  Вагон 3, бизнес-класс, скорость 380 км/ч. Пассажиры бизнес-класса ждут безупречного сервиса —
+  но безопасность движения важнее комфорта одного человека.
+initial:
+  loyalty: 65
+  safety: 55
+start: start
+interrupts:
+  - if: ["safety <= 15"]
+    next: end_alarm
+
+nodes:
+  start:
+    type: choice
+    speaker: narrator
+    text: "Над креслом 4B поднимается облако пара с запахом ванили. Соседка места 4A демонстративно кашляет."
+    competencies: [safety, regulations, communication]
+    timer: 20
+    on_timeout:
+      effects: { safety: -15 }
+      feedback: "Курение на борту — угроза безопасности движения: датчики дыма, возгорание. Реагировать нужно сразу."
+      next: neighbour_complains
+    choices:
+      - id: private_rule
+        text: "Подойти и вполголоса: «Прошу Вас прекратить курение. В поезде это не допускается, в том числе электронные сигареты, — это вопрос безопасности движения»."
+        quality: best
+        role_model: [rule]
+        effects: { safety: 20, loyalty: -5 }
+        feedback: "Вежливо, лично и с акцентом на безопасность движения — как требует сит. №20."
+        next: response
+      - id: tambour
+        text: "«Извините, может, выйдете покурить в тамбур?»"
+        quality: bad
+        effects: { safety: -10, loyalty: 5 }
+        feedback: "Курение запрещено во всём поезде, включая тамбуры. Такое «решение» создаёт риск срабатывания датчиков дыма."
+        next: tambour
+      - id: public_address
+        text: "Сделать замечание по громкой связи на весь вагон."
+        quality: poor
+        effects: { safety: 10, loyalty: -15 }
+        feedback: "Цель достигнута, но публичное замечание унижает пассажира и беспокоит весь вагон. Обращаться нужно индивидуально."
+        next: response
+
+  tambour:
+    type: choice
+    speaker: narrator
+    text: "Через пару минут вы проходите через тамбур: пассажир курит там, запах уже чувствуется в соседнем вагоне."
+    competencies: [safety, regulations]
+    timer: 15
+    on_timeout:
+      effects: { safety: -20 }
+      feedback: "Дым в тамбуре — прямой путь к срабатыванию пожарной сигнализации."
+      next: final
+    choices:
+      - id: correct_self
+        text: "«Прошу прощения, я ввёл Вас в заблуждение: курение запрещено во всём поезде, включая тамбуры. Благодарю за понимание»."
+        quality: good
+        role_model: [rule, assure]
+        effects: { safety: 20 }
+        feedback: "Хорошо, что исправили свою ошибку и честно признали её. Лучше было сразу назвать верное правило."
+        next: response
+      - id: keep_quiet
+        text: "Промолчать — вы же сами это предложили."
+        quality: bad
+        effects: { safety: -25 }
+        feedback: "Собственная ошибка не повод продолжать нарушение. Безопасность важнее неловкости."
+        next: final
+
+  neighbour_complains:
+    type: choice
+    speaker: passenger
+    speaker_name: Пассажир места 4A
+    text: "Соседка места 4A поднимается к вам: «Уберите его, мне дышать нечем! Я не за это платила в бизнес-классе»."
+    competencies: [communication, safety]
+    choices:
+      - id: acknowledge_and_act
+        text: "«Понимаю Вас и сожалею о дискомфорте. Сейчас решу вопрос». Сразу подойти к 4B и назвать правило."
+        quality: best
+        role_model: [acknowledge, solution, rule]
+        effects: { safety: 15, loyalty: 10 }
+        feedback: "Признали проблему, пообещали решение и тут же выполнили — пассажир видит, что о ней заботятся."
+        next: response
+      - id: offer_other_seat
+        text: "Предложить соседке пересесть, к курящему не подходить."
+        quality: poor
+        effects: { safety: -10, loyalty: 5 }
+        feedback: "Пересадка решает проблему одного пассажира, но курение продолжается — угроза безопасности осталась."
+        next: response
+
+  response:
+    type: router
+    routes:
+      - if: ["safety >= 60"]
+        next: complies
+      - next: refuses
+
+  complies:
+    type: choice
+    speaker: passenger
+    speaker_name: Пассажир места 4B
+    text: "Пассажир убирает устройство, но раздражён: «Ладно-ладно. Могли бы и повежливее, я за бизнес-класс платил»."
+    competencies: [communication]
+    choices:
+      - id: thank_and_offer
+        text: "«Благодарю Вас за понимание. Позвольте предложить Вам чай или кофе?»"
+        quality: best
+        role_model: [assure, solution]
+        effects: { loyalty: 20 }
+        feedback: "Правило соблюдено, а сервис бизнес-класса сохранён: благодарность и забота гасят раздражение."
+        next: final
+      - id: rules_for_all
+        text: "«Правила для всех одинаковы» — и уйти."
+        quality: poor
+        role_model: [rule]
+        effects: { loyalty: -5 }
+        feedback: "По сути верно, но разговор оборван на ноте конфликта. Не хватило шага «Заверить»."
+        next: final
+
+  refuses:
+    type: choice
+    speaker: passenger
+    speaker_name: Пассажир места 4B
+    text: "«Это не сигарета, это пар! Он никому не мешает», — пассажир демонстративно делает ещё одну затяжку."
+    competencies: [escalation, conflict]
+    timer: 20
+    on_timeout:
+      effects: { safety: -15 }
+      feedback: "Отказ прекратить нарушение — повод немедленно пригласить начальника поезда и ПТБ."
+      next: final
+    choices:
+      - id: call_chief
+        text: "Не спорить: «Вынужден пригласить начальника поезда». Вызвать НП и ПТБ по рации."
+        quality: best
+        role_model: [solution]
+        effects: { safety: 20, flags: { chief_called: true } }
+        feedback: "При отказе — начальник поезда и ПТБ, без спора и провокаций (сит. №20)."
+        next: chief_resolves
+      - id: argue
+        text: "Начать объяснять, чем вреден пар и почему датчики на него реагируют."
+        quality: poor
+        effects: { safety: -5, loyalty: -10 }
+        feedback: "Спор затягивает нарушение и раздражает обе стороны. Не вступать в конфликт — сразу эскалировать."
+        next: refuses
+      - id: take_device
+        text: "Забрать устройство у пассажира."
+        quality: bad
+        effects: { safety: -15, loyalty: -20 }
+        feedback: "Проводник не изымает личные вещи — это провоцирует конфликт и может закончиться жалобой или дракой."
+        next: final
+
+  chief_resolves:
+    type: choice
+    speaker: passenger
+    speaker_name: Пассажир места 4A
+    text: "Начальник поезда предупредил пассажира, что при повторном нарушении его передадут полиции. Устройство убрано. Соседка 4A смотрит на вас."
+    competencies: [communication]
+    choices:
+      - id: thank_neighbour
+        text: "Подойти к 4A: «Благодарю за терпение. Если что-то понадобится — нажмите кнопку вызова, я подойду»."
+        quality: best
+        role_model: [assure]
+        effects: { loyalty: 15 }
+        feedback: "Обратная связь от пассажира, пострадавшего от нарушения, — обязательный финальный шаг."
+        next: final
+      - id: silent
+        text: "Молча вернуться к работе."
+        quality: poor
+        effects: { loyalty: -5 }
+        feedback: "Соседка так и не услышала, что ситуация решена. Не хватило шага «Заверить»."
+        next: final
+
+  final:
+    type: router
+    routes:
+      - if: ["safety >= 70", "loyalty >= 60"]
+        next: end_ok
+      - if: ["safety >= 50"]
+        next: end_partial
+      - next: end_fail
+
+  end_ok:
+    type: ending
+    outcome: success
+    title: Нарушение пресечено деликатно
+    text: "Пассажир прекратил курение, сервис бизнес-класса не пострадал, соседи довольны."
+  end_partial:
+    type: ending
+    outcome: partial
+    title: Нарушение пресечено, осадок остался
+    text: "Курение прекратилось, но пассажиры недовольны тем, как это было сделано."
+  end_fail:
+    type: ending
+    outcome: fail
+    title: Нарушение не пресечено
+    text: "Пассажир продолжал курить до конца поездки, соседи оставили жалобу. Угроза безопасности сохранялась."
+  end_alarm:
+    type: ending
+    outcome: fail
+    title: Сработала пожарная сигнализация
+    text: "Датчики задымления сработали, поезд снизил скорость, задержка составила 12 минут. Курение на борту — это прежде всего вопрос безопасности движения."

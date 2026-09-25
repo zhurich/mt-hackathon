@@ -1,0 +1,199 @@
+id: drunk-passenger
+version: 1
+title: Пассажир с признаками опьянения
+summary: Пассажир распивает алкоголь в салоне и становится всё громче. Главное — не спровоцировать агрессию.
+category: conflict
+difficulty: 2
+service_class: standard
+sources:
+  - "Ситуации на борту, №6 «Пассажир с признаками алкогольного опьянения»"
+  - "Ситуации на борту, №21 «Пассажир употребляет алкоголь»"
+  - "Ситуации на борту, №24 «Пассажир грубит сотруднику»"
+briefing: |
+  Вагон 8, стандарт-класс, поезд отправился из Твери.
+  Пассажир места 23D открыл банку пива и громко разговаривает — соседи оборачиваются.
+initial:
+  loyalty: 60
+  safety: 60
+  vars:
+    tension: 0
+hud:
+  tension: Напряжение пассажира
+start: start
+interrupts:
+  - if: ["safety <= 15"]
+    next: end_fight
+
+nodes:
+  start:
+    type: choice
+    speaker: narrator
+    text: "Пассажир места 23D с банкой пива в руке громко рассказывает соседу анекдоты. От него сильно пахнет алкоголем."
+    competencies: [regulations, communication, conflict]
+    timer: 25
+    on_timeout:
+      effects: { loyalty: -10, safety: -5 }
+      feedback: "Нарушение нельзя оставлять без внимания: соседи ждут реакции проводника."
+      next: complaints
+    choices:
+      - id: private_rule
+        text: "Подойти лично и негромко: «Обращаю Ваше внимание, употребление алкогольных напитков допускается только в вагоне-бистро. Прошу Вас не создавать неудобств другим пассажирам»."
+        quality: best
+        role_model: [rule]
+        effects: { safety: 10 }
+        feedback: "Индивидуальное обращение без свидетелей и чёткое правило — так пассажиру проще согласиться, не «теряя лица» (сит. №21)."
+        next: reaction
+      - id: public_shout
+        text: "Громко, на весь вагон: «Здесь пить запрещено! Уберите немедленно!»"
+        quality: bad
+        effects: { safety: -10, loyalty: -10, vars: { tension: 2 } }
+        feedback: "Публичное замечание в приказном тоне провоцирует нетрезвого пассажира на агрессию. Не вступать в спор и не провоцировать (сит. №6)."
+        next: reaction
+      - id: ignore
+        text: "Не вмешиваться — пока он никому особо не мешает."
+        quality: poor
+        effects: { safety: -10, loyalty: -10 }
+        feedback: "Нарушение правил проезда и дискомфорт соседей — повод вмешаться сразу, пока ситуация не обострилась."
+        next: complaints
+
+  complaints:
+    type: choice
+    speaker: passenger
+    speaker_name: Пассажир места 23C
+    text: "К вам подходит соседка места 23C: «Сделайте что-нибудь, он мешает! Я не могу так ехать»."
+    competencies: [communication, conflict]
+    choices:
+      - id: acknowledge_and_act
+        text: "«Понимаю, что Вам некомфортно, сейчас помогу». Предложить свободное место, затем тактично напомнить пассажиру 23D правило."
+        quality: best
+        role_model: [acknowledge, solution, rule]
+        effects: { loyalty: 15, safety: 5 }
+        feedback: "Признали проблему, предложили решение соседке и адресовали правило нарушителю — полный цикл ролевой модели."
+        next: reaction
+      - id: nothing_to_do
+        text: "«Я ничего не могу сделать, он же ничего не нарушает»."
+        quality: bad
+        effects: { loyalty: -15, vars: { tension: 1 } }
+        feedback: "Это неверно: алкоголь в салоне запрещён (разрешён только в вагоне-бистро). Проводник обязан отреагировать."
+        next: reaction
+
+  reaction:
+    type: router
+    routes:
+      - if: ["vars.tension >= 2"]
+        next: aggressive
+      - next: partial_comply
+
+  partial_comply:
+    type: choice
+    speaker: radio
+    text: "Пассажир нехотя убрал банку, но через десять минут снова пьёт и начинает задирать соседа. Нужно сообщить начальнику поезда. Рация — у вас в руке, пассажир в двух шагах."
+    competencies: [escalation, conflict]
+    timer: 20
+    on_timeout:
+      effects: { safety: -10, vars: { tension: 1 } }
+      feedback: "Повторное нарушение с признаками агрессии — повод немедленно подключить начальника поезда."
+      next: aggressive
+    choices:
+      - id: neutral_radio
+        text: "По рации: «Начальнику поезда: вагон 8, место 23D, нужна ваша помощь, пассажир нарушает порядок»."
+        quality: best
+        role_model: [solution]
+        effects: { safety: 15, flags: { chief_informed: true } }
+        feedback: "Верно: информировать НП обязательно, но не говорить при пассажире, что он пьян, — это провоцирует агрессию (сит. №6)."
+        next: chief_arrives
+      - id: drunk_on_radio
+        text: "По рации: «В восьмом пьяный опять пьёт, заберите его»."
+        quality: bad
+        effects: { safety: -15, flags: { chief_informed: true }, vars: { tension: 2 } }
+        feedback: "Пассажир услышал, что его назвали пьяным, и завёлся. В сит. №6 прямо сказано: по рации не сообщать, что пассажир пьян."
+        next: aggressive
+      - id: second_warning
+        text: "Сделать ещё одно замечание самостоятельно, начальника не беспокоить."
+        quality: poor
+        effects: { safety: -10, vars: { tension: 1 } }
+        feedback: "О пассажире с признаками опьянения НП нужно проинформировать обязательно, любым доступным способом (сит. №6)."
+        next: aggressive
+
+  aggressive:
+    type: choice
+    speaker: passenger
+    speaker_name: Пассажир места 23D
+    text: "Пассажир встаёт и нависает над вами: «Да кто ты такой, чтобы мне указывать?!» Сосед испуганно отодвигается."
+    competencies: [conflict, safety, escalation]
+    timer: 15
+    on_timeout:
+      effects: { safety: -20 }
+      feedback: "Растерянность в конфликте опасна: пассажир чувствует безнаказанность, соседи — беззащитность."
+      next: final
+    choices:
+      - id: calm_boundary
+        text: "Сохранить дистанцию и спокойный тон: «Я готов помочь Вам, но прошу общаться корректно». Незаметно вызвать НП и сотрудников ПТБ."
+        quality: best
+        role_model: [rule, solution]
+        effects: { safety: 20, flags: { chief_informed: true } }
+        feedback: "Держаться достойно, не спорить, обозначить границы и подключить ПТБ — ровно по регламенту (сит. №24, №6)."
+        next: chief_arrives
+      - id: threaten
+        text: "Ответить в том же тоне и пригрозить высадкой на ближайшей станции."
+        quality: bad
+        effects: { safety: -25, loyalty: -10 }
+        feedback: "Ответная агрессия только эскалирует конфликт. Решение о передаче полиции принимает НП."
+        next: final
+      - id: physical
+        text: "Встать между пассажирами и попытаться силой усадить нарушителя на место."
+        quality: bad
+        effects: { safety: -30 }
+        feedback: "Физический контакт с агрессивным пассажиром — прямой риск для вас и окружающих. Это работа ПТБ и полиции."
+        next: final
+
+  chief_arrives:
+    type: choice
+    speaker: passenger
+    speaker_name: Пассажиры рядом
+    text: "Начальник поезда и сотрудник ПТБ провели беседу с пассажиром, он успокоился. Соседи взволнованно смотрят на вас."
+    competencies: [communication]
+    choices:
+      - id: thank
+        text: "«Благодарю вас за терпение и понимание. Ситуация под контролем, если что-то понадобится — я рядом»."
+        quality: best
+        role_model: [assure]
+        effects: { loyalty: 15 }
+        feedback: "Завершить общение заверением — последний шаг ролевой модели, он возвращает пассажирам чувство безопасности."
+        next: final
+      - id: gossip
+        text: "Обсудить с соседями: «Вечно такие попадаются, каждый рейс одно и то же»."
+        quality: bad
+        effects: { loyalty: -10 }
+        feedback: "Обсуждать пассажиров с другими пассажирами непрофессионально и нарушает этику поведения (СТО 03.011, п. 10.1)."
+        next: final
+
+  final:
+    type: router
+    routes:
+      - if: ["safety >= 70", "loyalty >= 60"]
+        next: end_ok
+      - if: ["safety >= 40"]
+        next: end_partial
+      - next: end_fail
+
+  end_ok:
+    type: ending
+    outcome: success
+    title: Конфликт предотвращён
+    text: "Нарушение пресечено без скандала, начальник поезда вовремя в курсе, пассажиры спокойно продолжили поездку."
+  end_partial:
+    type: ending
+    outcome: partial
+    title: Порядок восстановлен, но с издержками
+    text: "Ситуацию удалось взять под контроль, однако напряжение в вагоне было лишним. Посмотрите, какие решения его создали."
+  end_fail:
+    type: ending
+    outcome: fail
+    title: Ситуация вышла из-под контроля
+    text: "Конфликт затянулся, пассажиры жаловались начальнику поезда. На станции нарушителя передали полиции."
+  end_fight:
+    type: ending
+    outcome: fail
+    title: Конфликт перерос в драку
+    text: "Пассажир ударил соседа. Поезд встречал наряд полиции, один человек пострадал. Провокации и промедление сделали своё дело."
