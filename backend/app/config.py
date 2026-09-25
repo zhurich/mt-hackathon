@@ -4,7 +4,7 @@ from functools import lru_cache
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
-DEV_JWT_SECRET = "dev-only-secret-change-me"
+DEV_JWT_SECRET = "dev-only-insecure-secret-change-me-in-prod"
 
 
 class Settings(BaseSettings):
@@ -18,6 +18,7 @@ class Settings(BaseSettings):
 
     # Демо-данные: синтетическая оргструктура, сотрудники и история прохождений.
     seed_demo: bool = True
+    demo_password: str = "vsm2026"  # пароль всех демо-учётных записей
     # Ключ интеграции HR/LMS, который создаётся при сидировании. В БД хранится только его хэш.
     demo_integration_key: str = "demo-integration-key"
 

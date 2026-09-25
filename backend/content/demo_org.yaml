@@ -1,0 +1,32 @@
+# ДЕМО-ДАННЫЕ. Все имена, табельные номера и логины вымышлены (синтетические) —
+# реальные персональные данные сотрудников и пассажиров в демо-среде не используются (152-ФЗ).
+#
+# skill   — вероятность выбрать лучший вариант при симуляции истории (0..1)
+# history — сколько прохождений сгенерировать; days_ago — точные дни для прохождений (иначе случайно за 40 дней)
+
+depots:
+  - name: Депо Москва-ВСМ
+    brigades: [Бригада М-1, Бригада М-2]
+  - name: Депо Санкт-Петербург-ВСМ
+    brigades: [Бригада П-1, Бригада П-2]
+
+trainers:
+  - { login: trainer, display_name: Тренер-наставник (демо), employee_code: SYN-0001 }
+
+conductors:
+  - { login: demo, display_name: Анна В., employee_code: SYN-1001, brigade: Бригада М-1, skill: 0.6, days_ago: [27, 26, 12, 6, 2] }
+  - { login: igor, display_name: Игорь К., employee_code: SYN-1002, brigade: Бригада М-1, skill: 0.8, history: 8 }
+  - { login: maria, display_name: Мария Л., employee_code: SYN-1003, brigade: Бригада М-1, skill: 0.55, history: 6 }
+  - { login: oleg, display_name: Олег Т., employee_code: SYN-1004, brigade: Бригада М-1, skill: 0.4, history: 5 }
+  - { login: ekaterina, display_name: Екатерина Р., employee_code: SYN-1005, brigade: Бригада М-2, skill: 0.85, history: 10 }
+  - { login: dmitry, display_name: Дмитрий С., employee_code: SYN-1006, brigade: Бригада М-2, skill: 0.6, history: 7 }
+  - { login: natalia, display_name: Наталья Ф., employee_code: SYN-1007, brigade: Бригада М-2, skill: 0.5, history: 4 }
+  - { login: sergey, display_name: Сергей Б., employee_code: SYN-1008, brigade: Бригада М-2, skill: 0.3, history: 6 }
+  - { login: olga, display_name: Ольга Н., employee_code: SYN-1009, brigade: Бригада П-1, skill: 0.75, history: 9 }
+  - { login: pavel, display_name: Павел Ж., employee_code: SYN-1010, brigade: Бригада П-1, skill: 0.65, history: 6 }
+  - { login: yulia, display_name: Юлия Д., employee_code: SYN-1011, brigade: Бригада П-1, skill: 0.45, history: 5 }
+  - { login: artem, display_name: Артём М., employee_code: SYN-1012, brigade: Бригада П-1, skill: 0.7, history: 3 }
+  - { login: ksenia, display_name: Ксения Г., employee_code: SYN-1013, brigade: Бригада П-2, skill: 0.9, history: 7 }
+  - { login: nikita, display_name: Никита Е., employee_code: SYN-1014, brigade: Бригада П-2, skill: 0.5, history: 8 }
+  - { login: victoria, display_name: Виктория З., employee_code: SYN-1015, brigade: Бригада П-2, skill: 0.6, history: 5 }
+  - { login: roman, display_name: Роман Ш., employee_code: SYN-1016, brigade: Бригада П-2, skill: 0.35, history: 4 }
