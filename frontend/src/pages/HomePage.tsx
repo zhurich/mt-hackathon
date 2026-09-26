@@ -3,7 +3,7 @@ import { useQuery } from '@tanstack/react-query'
 import { api } from '../api/client'
 import type { Analytics, Profile, ScenarioSummary } from '../api/types'
 import { Async, Button, Card, Chip, Icon, ProgressBar, StatCard } from '../components/ui'
-import { experience, formatDate } from '../labels'
+import { experience, formatDate, levelProgress } from '../labels'
 
 export default function HomePage() {
   const profile = useQuery({ queryKey: ['profile'], queryFn: () => api.get<Profile>('/profile') })
@@ -27,7 +27,7 @@ export default function HomePage() {
               <div className="spread small">
                 <strong>{data.level.title}</strong>
                 <span className="muted tabular">
-                  {data.level.next_xp ? `${data.total_xp} / ${experience(data.level.next_xp)}` : `${experience(data.total_xp)} · максимум`}
+                  {levelProgress(data.level)}
                 </span>
               </div>
               <ProgressBar value={data.level.progress} label="Прогресс до следующего уровня" />

@@ -1,6 +1,6 @@
 // Подписи и значки для кодов, приходящих с backend.
 
-import type { CompetencyStatus, Outcome, Quality } from './api/types'
+import type { CompetencyStatus, LevelInfo, Outcome, Quality } from './api/types'
 import type { IconName } from './components/Icon'
 
 /** Тон метки статуса (Chip). Статус всегда кодируется иконкой и текстом, а не только цветом. */
@@ -102,6 +102,15 @@ export function experience(amount: number): string {
   const last = tail % 10
   const word = tail >= 11 && tail <= 14 ? 'очков' : last === 1 ? 'очко' : last >= 2 && last <= 4 ? 'очка' : 'очков'
   return `${amount} ${word} опыта`
+}
+
+/**
+ * Подпись к шкале уровня. Шкала (level.progress) показывает путь внутри текущего уровня,
+ * поэтому и счёт ведётся от порога текущего уровня: «150 / 250 очков опыта», а не «300 / 400».
+ */
+export function levelProgress(level: LevelInfo): string {
+  if (level.next_xp === null) return `${experience(level.xp)} · максимум`
+  return `${level.xp - level.level_xp} / ${experience(level.next_xp - level.level_xp)}`
 }
 
 export function signed(value: number): string {

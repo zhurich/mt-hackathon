@@ -3,7 +3,7 @@ import { useLocation, useNavigate, useParams } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
 import { api } from '../api/client'
 import type { AttemptView } from '../api/types'
-import { ACHIEVEMENT_ICON, SPEAKER, SPEAKER_ICON, experience } from '../labels'
+import { ACHIEVEMENT_ICON, SPEAKER, SPEAKER_ICON, experience, levelProgress } from '../labels'
 import {
   Alert, Button, Card, ChoiceButton, ErrorBox, IconButton, Loader, OutcomeChip, ProgressBar, ScaleBar, SpeechBubble, Stat, Timer,
 } from '../components/ui'
@@ -175,7 +175,7 @@ function Result({ view, onRetry }: { view: AttemptView; onRetry: () => void }) {
             <strong className="h2">+{experience(rewards.xp)}</strong>
           </div>
           <div className="small muted">
-            {rewards.level.title}{rewards.level.next_xp ? ` · ${rewards.level.xp} / ${rewards.level.next_xp}` : ''}
+            {rewards.level.title} · {levelProgress(rewards.level)}
           </div>
           <ProgressBar value={rewards.level.progress} label="Прогресс уровня" />
           {rewards.level_up && (
