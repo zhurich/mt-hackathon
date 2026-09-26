@@ -1,0 +1,40 @@
+# Локальное развёртывание: PostgreSQL + backend (FastAPI) + frontend (nginx).
+# Запуск: docker compose up --build   →   http://localhost:8080 (Swagger: http://localhost:8080/docs)
+
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: vsm
+      POSTGRES_USER: vsm
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-vsm-local-only}
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U vsm -d vsm"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+
+  backend:
+    build: ./backend
+    environment:
+      DATABASE_URL: postgresql+psycopg://vsm:${POSTGRES_PASSWORD:-vsm-local-only}@db:5432/vsm
+      JWT_SECRET: ${JWT_SECRET:-local-docker-secret-please-override-0123456789}
+      CORS_ORIGINS: '["http://localhost:8080"]'
+      SEED_DEMO: ${SEED_DEMO:-true}
+    depends_on:
+      db:
+        condition: service_healthy
+    expose:
+      - "8000"
+
+  frontend:
+    build: ./frontend
+    depends_on:
+      - backend
+    ports:
+      - "8080:80"
+
+volumes:
+  db-data:

@@ -40,6 +40,11 @@
 | 2026-09-25 | Web, mobile-first | Проводник работает со смартфона/планшета |
 | 2026-09-25 | Хэш паролей — PBKDF2-SHA256 из стандартной библиотеки | Нет лишних зависимостей |
 | 2026-09-25 | Миграции — `create_all` без Alembic | Экономия времени на хакатоне; указано в ограничениях |
+| 2026-09-25 | Варианты ответа перемешиваются на сервере (seed = id попытки + id узла) | В YAML лучший вариант часто первый; порядок не должен подсказывать ответ, но стабилен при перезагрузке |
+| 2026-09-25 | Vite 6 вместо 8, без oxlint | Локальный Node 20.16 < 20.19, нативные бинарники Vite 8/oxlint не работают; `npm run lint` = `tsc -b` |
+| 2026-09-25 | Достижения и челленджи описаны фильтрами по завершённым попыткам (`gamification/rules.py`) | Один язык правил для обоих, новые правила — только YAML |
+| 2026-09-25 | Демо-история генерируется прогоном реального движка по «навыку» сотрудника | Рейтинг, достижения и аналитика согласованы, а не нарисованы |
+| 2026-09-25 | Компетенции показываются горизонтальными барами, а не радаром | Величина точнее читается по длине; статус компетенции — значок + подпись, не только цвет |
 
 ## 4. Предметная область (из датасета)
 
@@ -150,13 +155,13 @@
 | Группа | Методы |
 |---|---|
 | Auth | `POST /auth/login`, `GET /auth/me` |
-| Сценарии | `GET /scenarios`, `GET /scenarios/{id}`, `GET /scenarios/{id}/graph` (trainer) , `POST /scenarios` (trainer, загрузка YAML/JSON), `POST /scenarios/validate` |
+| Сценарии | `GET /scenarios`, `GET /scenarios/{id}`, `GET /scenarios/{id}/graph` (trainer), `POST /scenarios` (trainer, загрузка YAML/JSON), `POST /scenarios/validate` (trainer) |
 | Попытки | `POST /attempts` (старт), `GET /attempts/{id}`, `POST /attempts/{id}/decisions`, `GET /attempts/{id}/debrief`, `GET /attempts` (мои) |
 | Профиль | `GET /profile`, `GET /profile/achievements` |
 | Рейтинг | `GET /leaderboard?scope=brigade|depot|company` |
 | Уведомления | `GET /notifications`, `POST /notifications/read` |
-| Аналитика | `GET /analytics/me`, `GET /analytics/team` (trainer) |
-| Интеграция (HR/LMS, заголовок `X-API-Key`) | `GET /integration/employees`, `PUT /integration/employees/{external_id}`, `GET /integration/results`, `GET /integration/events` |
+| Аналитика | `GET /analytics/me`, `GET /analytics/team` (trainer), `GET /analytics/users/{id}` (trainer) |
+| Интеграция (HR/LMS, заголовок `X-API-Key`) | `GET /integration/org-units`, `GET /integration/employees`, `PUT /integration/employees/{external_id}`, `GET /integration/results`, `GET /integration/events` |
 
 Единый формат ошибки: `{"error": {"code": "...", "message": "..."}}`.
 
@@ -186,7 +191,8 @@ backend/
     gamification/    # уровни, достижения, челленджи, рейтинг, уведомления
     analytics/       # мастерство, выводы, рекомендации, командная аналитика
     api/             # FastAPI-роутеры
-    models.py db.py config.py security.py main.py seed.py
+    models.py db.py config.py security.py errors.py timeutil.py
+    content.py scenario_store.py services.py seed.py main.py
   content/           # ДАННЫЕ: сценарии, компетенции, достижения, челленджи, демо-пользователи
   tests/
 frontend/            # React + TS (Vite), mobile-first

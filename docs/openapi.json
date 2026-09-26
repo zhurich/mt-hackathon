@@ -1,0 +1,2595 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "ВСМ Тренажёр API",
+    "description": "Backend геймифицированного тренажёра проводников высокоскоростной магистрали: движок сценариев, начисление очков компетенций, геймификация, аналитика и API для HR/LMS.\n\nАвторизация пользователей — Bearer JWT (`POST /api/v1/auth/login`), внешних систем — заголовок `X-API-Key`.",
+    "version": "1.0.0"
+  },
+  "paths": {
+    "/api/v1/auth/login": {
+      "post": {
+        "tags": [
+          "Auth"
+        ],
+        "summary": "Вход по логину и паролю",
+        "operationId": "login_api_v1_auth_login_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoginRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LoginResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/auth/me": {
+      "get": {
+        "tags": [
+          "Auth"
+        ],
+        "summary": "Текущий пользователь",
+        "operationId": "me_api_v1_auth_me_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserOut"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/api/v1/scenarios": {
+      "get": {
+        "tags": [
+          "Сценарии"
+        ],
+        "summary": "Каталог опубликованных сценариев",
+        "operationId": "list_scenarios_api_v1_scenarios_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/ScenarioSummary"
+                  },
+                  "type": "array",
+                  "title": "Response List Scenarios Api V1 Scenarios Get"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      },
+      "post": {
+        "tags": [
+          "Сценарии"
+        ],
+        "summary": "Опубликовать новый сценарий или новую версию (тренер)",
+        "operationId": "upload_scenario_api_v1_scenarios_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ScenarioUpload"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ScenarioSummary"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/api/v1/scenarios/{scenario_id}": {
+      "get": {
+        "tags": [
+          "Сценарии"
+        ],
+        "summary": "Описание сценария (без графа решений)",
+        "operationId": "scenario_detail_api_v1_scenarios__scenario_id__get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "scenario_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Scenario Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ScenarioDetail"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/scenarios/{scenario_id}/graph": {
+      "get": {
+        "tags": [
+          "Сценарии"
+        ],
+        "summary": "Полный граф сценария (тренер)",
+        "operationId": "scenario_graph_api_v1_scenarios__scenario_id__graph_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "scenario_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Scenario Id"
+            }
+          },
+          {
+            "name": "version",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Version"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Scenario Graph Api V1 Scenarios  Scenario Id  Graph Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/scenarios/validate": {
+      "post": {
+        "tags": [
+          "Сценарии"
+        ],
+        "summary": "Проверить сценарий без публикации (тренер)",
+        "operationId": "validate_scenario_api_v1_scenarios_validate_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ScenarioUpload"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationResult"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/api/v1/attempts": {
+      "post": {
+        "tags": [
+          "Прохождение"
+        ],
+        "summary": "Начать сценарий",
+        "operationId": "start_attempt_api_v1_attempts_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StartRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AttemptView"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "Прохождение"
+        ],
+        "summary": "История моих завершённых попыток",
+        "operationId": "my_attempts_api_v1_attempts_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1,
+              "default": 20,
+              "title": "Limit"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/AttemptListItem"
+                  },
+                  "title": "Response My Attempts Api V1 Attempts Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/attempts/{attempt_id}": {
+      "get": {
+        "tags": [
+          "Прохождение"
+        ],
+        "summary": "Текущее состояние попытки",
+        "operationId": "get_attempt_api_v1_attempts__attempt_id__get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "attempt_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Attempt Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AttemptView"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/attempts/{attempt_id}/decisions": {
+      "post": {
+        "tags": [
+          "Прохождение"
+        ],
+        "summary": "Принять решение или сообщить о таймауте",
+        "operationId": "decide_api_v1_attempts__attempt_id__decisions_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "attempt_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Attempt Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DecisionRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AttemptView"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/attempts/{attempt_id}/debrief": {
+      "get": {
+        "tags": [
+          "Прохождение"
+        ],
+        "summary": "Разбор завершённой попытки",
+        "operationId": "debrief_api_v1_attempts__attempt_id__debrief_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "attempt_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Attempt Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Debrief Api V1 Attempts  Attempt Id  Debrief Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/profile": {
+      "get": {
+        "tags": [
+          "Профиль и геймификация"
+        ],
+        "summary": "Игровой профиль: уровень, баллы, достижения, челленджи",
+        "operationId": "profile_api_v1_profile_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Profile"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/api/v1/leaderboard": {
+      "get": {
+        "tags": [
+          "Профиль и геймификация"
+        ],
+        "summary": "Рейтинг по активным баллам (сгорают через 30 дней)",
+        "operationId": "get_leaderboard_api_v1_leaderboard_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "scope",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "enum": [
+                "brigade",
+                "depot",
+                "company"
+              ],
+              "type": "string",
+              "default": "brigade",
+              "title": "Scope"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 200,
+              "minimum": 1,
+              "default": 50,
+              "title": "Limit"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Get Leaderboard Api V1 Leaderboard Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/notifications": {
+      "get": {
+        "tags": [
+          "Профиль и геймификация"
+        ],
+        "summary": "Уведомления (новые сценарии, челленджи, сгорающие баллы…)",
+        "operationId": "notifications_api_v1_notifications_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1,
+              "default": 30,
+              "title": "Limit"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotificationList"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/notifications/read": {
+      "post": {
+        "tags": [
+          "Профиль и геймификация"
+        ],
+        "summary": "Отметить уведомления прочитанными",
+        "operationId": "mark_read_api_v1_notifications_read_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MarkRead"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/api/v1/analytics/me": {
+      "get": {
+        "tags": [
+          "Профиль и геймификация"
+        ],
+        "summary": "Моя аналитика: компетенции, выводы, рекомендации",
+        "operationId": "my_analytics_api_v1_analytics_me_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "type": "object",
+                  "title": "Response My Analytics Api V1 Analytics Me Get"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/api/v1/analytics/team": {
+      "get": {
+        "tags": [
+          "Профиль и геймификация"
+        ],
+        "summary": "Аналитика по бригадам и сотрудникам (тренер)",
+        "operationId": "team_api_v1_analytics_team_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "type": "object",
+                  "title": "Response Team Api V1 Analytics Team Get"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/api/v1/analytics/users/{user_id}": {
+      "get": {
+        "tags": [
+          "Профиль и геймификация"
+        ],
+        "summary": "Аналитика конкретного сотрудника (тренер)",
+        "operationId": "employee_analytics_api_v1_analytics_users__user_id__get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "user_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "User Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Employee Analytics Api V1 Analytics Users  User Id  Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/integration/org-units": {
+      "get": {
+        "tags": [
+          "Интеграция HR / LMS"
+        ],
+        "summary": "Справочник депо и бригад",
+        "operationId": "org_units_api_v1_integration_org_units_get",
+        "parameters": [
+          {
+            "name": "x-api-key",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Api-Key"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/OrgUnitOut"
+                  },
+                  "title": "Response Org Units Api V1 Integration Org Units Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/integration/employees": {
+      "get": {
+        "tags": [
+          "Интеграция HR / LMS"
+        ],
+        "summary": "Сотрудники с прогрессом и компетенциями",
+        "operationId": "employees_api_v1_integration_employees_get",
+        "parameters": [
+          {
+            "name": "x-api-key",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Api-Key"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/EmployeeOut"
+                  },
+                  "title": "Response Employees Api V1 Integration Employees Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/integration/employees/{external_id}": {
+      "put": {
+        "tags": [
+          "Интеграция HR / LMS"
+        ],
+        "summary": "Создать или обновить сотрудника из HR",
+        "operationId": "sync_employee_api_v1_integration_employees__external_id__put",
+        "parameters": [
+          {
+            "name": "external_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "External Id"
+            }
+          },
+          {
+            "name": "x-api-key",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Api-Key"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EmployeeSync"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EmployeeOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/integration/results": {
+      "get": {
+        "tags": [
+          "Интеграция HR / LMS"
+        ],
+        "summary": "Результаты прохождений для LMS",
+        "operationId": "results_api_v1_integration_results_get",
+        "parameters": [
+          {
+            "name": "since",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Только завершённые после этого момента (UTC)",
+              "title": "Since"
+            },
+            "description": "Только завершённые после этого момента (UTC)"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 5000,
+              "minimum": 1,
+              "default": 500,
+              "title": "Limit"
+            }
+          },
+          {
+            "name": "x-api-key",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Api-Key"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ResultOut"
+                  },
+                  "title": "Response Results Api V1 Integration Results Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/integration/events": {
+      "get": {
+        "tags": [
+          "Интеграция HR / LMS"
+        ],
+        "summary": "Журнал решений в упрощённом формате xAPI-statements",
+        "operationId": "events_api_v1_integration_events_get",
+        "parameters": [
+          {
+            "name": "since",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Только события после этого момента (UTC)",
+              "title": "Since"
+            },
+            "description": "Только события после этого момента (UTC)"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 10000,
+              "minimum": 1,
+              "default": 1000,
+              "title": "Limit"
+            }
+          },
+          {
+            "name": "x-api-key",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Api-Key"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Events Api V1 Integration Events Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/health": {
+      "get": {
+        "tags": [
+          "Служебное"
+        ],
+        "summary": "Проверка работоспособности",
+        "operationId": "health_api_health_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "type": "object",
+                  "title": "Response Health Api Health Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "AchievementOut": {
+        "properties": {
+          "code": {
+            "type": "string",
+            "title": "Code"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "description": {
+            "type": "string",
+            "title": "Description"
+          },
+          "icon": {
+            "type": "string",
+            "title": "Icon"
+          },
+          "earned_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Earned At"
+          },
+          "progress": {
+            "type": "integer",
+            "title": "Progress"
+          },
+          "target": {
+            "type": "integer",
+            "title": "Target"
+          }
+        },
+        "type": "object",
+        "required": [
+          "code",
+          "title",
+          "description",
+          "icon",
+          "earned_at",
+          "progress",
+          "target"
+        ],
+        "title": "AchievementOut"
+      },
+      "AttemptListItem": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "scenario_id": {
+            "type": "string",
+            "title": "Scenario Id"
+          },
+          "scenario_title": {
+            "type": "string",
+            "title": "Scenario Title"
+          },
+          "outcome": {
+            "type": "string",
+            "title": "Outcome"
+          },
+          "xp": {
+            "type": "integer",
+            "title": "Xp"
+          },
+          "final_loyalty": {
+            "type": "integer",
+            "title": "Final Loyalty"
+          },
+          "final_safety": {
+            "type": "integer",
+            "title": "Final Safety"
+          },
+          "finished_at": {
+            "type": "string",
+            "title": "Finished At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "scenario_id",
+          "scenario_title",
+          "outcome",
+          "xp",
+          "final_loyalty",
+          "final_safety",
+          "finished_at"
+        ],
+        "title": "AttemptListItem"
+      },
+      "AttemptView": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "scenario_id": {
+            "type": "string",
+            "title": "Scenario Id"
+          },
+          "scenario_title": {
+            "type": "string",
+            "title": "Scenario Title"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "loyalty": {
+            "type": "integer",
+            "title": "Loyalty"
+          },
+          "safety": {
+            "type": "integer",
+            "title": "Safety"
+          },
+          "step": {
+            "type": "integer",
+            "title": "Step"
+          },
+          "hud": {
+            "items": {
+              "$ref": "#/components/schemas/HudItem"
+            },
+            "type": "array",
+            "title": "Hud"
+          },
+          "node": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/NodeOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "server_time_ms": {
+            "type": "integer",
+            "title": "Server Time Ms"
+          },
+          "last": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/LastDecision"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "ending": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Ending"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "rewards": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rewards"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "scenario_id",
+          "scenario_title",
+          "status",
+          "loyalty",
+          "safety",
+          "step",
+          "hud",
+          "node",
+          "server_time_ms"
+        ],
+        "title": "AttemptView"
+      },
+      "ChallengeOut": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "description": {
+            "type": "string",
+            "title": "Description"
+          },
+          "ends": {
+            "type": "string",
+            "title": "Ends"
+          },
+          "progress": {
+            "type": "integer",
+            "title": "Progress"
+          },
+          "target": {
+            "type": "integer",
+            "title": "Target"
+          },
+          "reward_xp": {
+            "type": "integer",
+            "title": "Reward Xp"
+          },
+          "completed_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Completed At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "title",
+          "description",
+          "ends",
+          "progress",
+          "target",
+          "reward_xp",
+          "completed_at"
+        ],
+        "title": "ChallengeOut"
+      },
+      "ChoiceOut": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "text": {
+            "type": "string",
+            "title": "Text"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "text"
+        ],
+        "title": "ChoiceOut"
+      },
+      "CompetencyOut": {
+        "properties": {
+          "code": {
+            "type": "string",
+            "title": "Code"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "description": {
+            "type": "string",
+            "title": "Description"
+          },
+          "mastery": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Mastery"
+          },
+          "samples": {
+            "type": "integer",
+            "title": "Samples"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          }
+        },
+        "type": "object",
+        "required": [
+          "code",
+          "title",
+          "description",
+          "mastery",
+          "samples",
+          "status"
+        ],
+        "title": "CompetencyOut"
+      },
+      "DecisionRequest": {
+        "properties": {
+          "choice_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 64
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Choice Id"
+          },
+          "timeout": {
+            "type": "boolean",
+            "title": "Timeout",
+            "description": "Клиентский таймер истёк — игрок не успел ответить",
+            "default": false
+          }
+        },
+        "type": "object",
+        "title": "DecisionRequest"
+      },
+      "EmployeeOut": {
+        "properties": {
+          "external_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "External Id"
+          },
+          "employee_code": {
+            "type": "string",
+            "title": "Employee Code"
+          },
+          "display_name": {
+            "type": "string",
+            "title": "Display Name"
+          },
+          "role": {
+            "type": "string",
+            "title": "Role"
+          },
+          "brigade": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Brigade"
+          },
+          "depot": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Depot"
+          },
+          "level": {
+            "type": "string",
+            "title": "Level"
+          },
+          "total_xp": {
+            "type": "integer",
+            "title": "Total Xp"
+          },
+          "active_points": {
+            "type": "integer",
+            "title": "Active Points"
+          },
+          "competencies": {
+            "additionalProperties": {
+              "type": "number"
+            },
+            "type": "object",
+            "title": "Competencies"
+          }
+        },
+        "type": "object",
+        "required": [
+          "external_id",
+          "employee_code",
+          "display_name",
+          "role",
+          "brigade",
+          "depot",
+          "level",
+          "total_xp",
+          "active_points",
+          "competencies"
+        ],
+        "title": "EmployeeOut"
+      },
+      "EmployeeSync": {
+        "properties": {
+          "display_name": {
+            "type": "string",
+            "maxLength": 80,
+            "minLength": 1,
+            "title": "Display Name",
+            "description": "Псевдоним или ФИО в сокращённой форме"
+          },
+          "employee_code": {
+            "type": "string",
+            "maxLength": 32,
+            "minLength": 1,
+            "title": "Employee Code",
+            "description": "Табельный номер"
+          },
+          "brigade_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Brigade Id"
+          },
+          "role": {
+            "type": "string",
+            "pattern": "^(conductor|trainer)$",
+            "title": "Role",
+            "default": "conductor"
+          },
+          "login": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 64
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Login",
+            "description": "По умолчанию — табельный номер"
+          },
+          "initial_password": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 128,
+                "minLength": 8
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Initial Password",
+            "description": "Без пароля вход невозможен до его установки"
+          }
+        },
+        "type": "object",
+        "required": [
+          "display_name",
+          "employee_code"
+        ],
+        "title": "EmployeeSync"
+      },
+      "Ending": {
+        "properties": {
+          "outcome": {
+            "type": "string",
+            "title": "Outcome"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "text": {
+            "type": "string",
+            "title": "Text"
+          }
+        },
+        "type": "object",
+        "required": [
+          "outcome",
+          "title",
+          "text"
+        ],
+        "title": "Ending"
+      },
+      "Expiring": {
+        "properties": {
+          "points": {
+            "type": "integer",
+            "title": "Points"
+          },
+          "expires_at": {
+            "type": "string",
+            "title": "Expires At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "points",
+          "expires_at"
+        ],
+        "title": "Expiring"
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "type": "array",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "title": "HTTPValidationError"
+      },
+      "HudItem": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "label": {
+            "type": "string",
+            "title": "Label"
+          },
+          "value": {
+            "type": "number",
+            "title": "Value"
+          }
+        },
+        "type": "object",
+        "required": [
+          "name",
+          "label",
+          "value"
+        ],
+        "title": "HudItem"
+      },
+      "LastDecision": {
+        "properties": {
+          "delta": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "type": "object",
+            "title": "Delta"
+          },
+          "timed_out": {
+            "type": "boolean",
+            "title": "Timed Out"
+          },
+          "interrupted": {
+            "type": "boolean",
+            "title": "Interrupted"
+          }
+        },
+        "type": "object",
+        "required": [
+          "delta",
+          "timed_out",
+          "interrupted"
+        ],
+        "title": "LastDecision"
+      },
+      "LoginRequest": {
+        "properties": {
+          "login": {
+            "type": "string",
+            "maxLength": 64,
+            "minLength": 1,
+            "title": "Login"
+          },
+          "password": {
+            "type": "string",
+            "maxLength": 128,
+            "minLength": 1,
+            "title": "Password"
+          }
+        },
+        "type": "object",
+        "required": [
+          "login",
+          "password"
+        ],
+        "title": "LoginRequest"
+      },
+      "LoginResponse": {
+        "properties": {
+          "access_token": {
+            "type": "string",
+            "title": "Access Token"
+          },
+          "token_type": {
+            "type": "string",
+            "title": "Token Type",
+            "default": "bearer"
+          },
+          "user": {
+            "$ref": "#/components/schemas/UserOut"
+          }
+        },
+        "type": "object",
+        "required": [
+          "access_token",
+          "user"
+        ],
+        "title": "LoginResponse"
+      },
+      "MarkRead": {
+        "properties": {
+          "ids": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "integer"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ids"
+          }
+        },
+        "type": "object",
+        "title": "MarkRead"
+      },
+      "NodeOut": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "speaker": {
+            "type": "string",
+            "title": "Speaker"
+          },
+          "speaker_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Speaker Name"
+          },
+          "text": {
+            "type": "string",
+            "title": "Text"
+          },
+          "choices": {
+            "items": {
+              "$ref": "#/components/schemas/ChoiceOut"
+            },
+            "type": "array",
+            "title": "Choices"
+          },
+          "timer": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Timer"
+          },
+          "deadline_ms": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Deadline Ms"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "speaker",
+          "speaker_name",
+          "text",
+          "choices",
+          "timer",
+          "deadline_ms"
+        ],
+        "title": "NodeOut"
+      },
+      "NotificationList": {
+        "properties": {
+          "unread": {
+            "type": "integer",
+            "title": "Unread"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/NotificationOut"
+            },
+            "type": "array",
+            "title": "Items"
+          }
+        },
+        "type": "object",
+        "required": [
+          "unread",
+          "items"
+        ],
+        "title": "NotificationList"
+      },
+      "NotificationOut": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "kind": {
+            "type": "string",
+            "title": "Kind"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "body": {
+            "type": "string",
+            "title": "Body"
+          },
+          "link": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Link"
+          },
+          "created_at": {
+            "type": "string",
+            "title": "Created At"
+          },
+          "read_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Read At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "kind",
+          "title",
+          "body",
+          "link",
+          "created_at",
+          "read_at"
+        ],
+        "title": "NotificationOut"
+      },
+      "OrgUnitOut": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "kind": {
+            "type": "string",
+            "title": "Kind"
+          },
+          "parent_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Parent Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "kind",
+          "parent_id"
+        ],
+        "title": "OrgUnitOut"
+      },
+      "Profile": {
+        "properties": {
+          "user": {
+            "$ref": "#/components/schemas/UserOut"
+          },
+          "level": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Level"
+          },
+          "total_xp": {
+            "type": "integer",
+            "title": "Total Xp"
+          },
+          "active_points": {
+            "type": "integer",
+            "title": "Active Points"
+          },
+          "expiring": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Expiring"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "streak_days": {
+            "type": "integer",
+            "title": "Streak Days"
+          },
+          "finished_attempts": {
+            "type": "integer",
+            "title": "Finished Attempts"
+          },
+          "achievements": {
+            "items": {
+              "$ref": "#/components/schemas/AchievementOut"
+            },
+            "type": "array",
+            "title": "Achievements"
+          },
+          "challenges": {
+            "items": {
+              "$ref": "#/components/schemas/ChallengeOut"
+            },
+            "type": "array",
+            "title": "Challenges"
+          },
+          "competencies": {
+            "items": {
+              "$ref": "#/components/schemas/CompetencyOut"
+            },
+            "type": "array",
+            "title": "Competencies"
+          }
+        },
+        "type": "object",
+        "required": [
+          "user",
+          "level",
+          "total_xp",
+          "active_points",
+          "expiring",
+          "streak_days",
+          "finished_attempts",
+          "achievements",
+          "challenges",
+          "competencies"
+        ],
+        "title": "Profile"
+      },
+      "ResultOut": {
+        "properties": {
+          "attempt_id": {
+            "type": "integer",
+            "title": "Attempt Id"
+          },
+          "employee_code": {
+            "type": "string",
+            "title": "Employee Code"
+          },
+          "external_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "External Id"
+          },
+          "scenario_id": {
+            "type": "string",
+            "title": "Scenario Id"
+          },
+          "scenario_version": {
+            "type": "integer",
+            "title": "Scenario Version"
+          },
+          "outcome": {
+            "type": "string",
+            "title": "Outcome"
+          },
+          "xp": {
+            "type": "integer",
+            "title": "Xp"
+          },
+          "final_loyalty": {
+            "type": "integer",
+            "title": "Final Loyalty"
+          },
+          "final_safety": {
+            "type": "integer",
+            "title": "Final Safety"
+          },
+          "competency_results": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "type": "object",
+            "title": "Competency Results"
+          },
+          "role_model_covered": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Role Model Covered"
+          },
+          "finished_at": {
+            "type": "string",
+            "title": "Finished At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "attempt_id",
+          "employee_code",
+          "external_id",
+          "scenario_id",
+          "scenario_version",
+          "outcome",
+          "xp",
+          "final_loyalty",
+          "final_safety",
+          "competency_results",
+          "role_model_covered",
+          "finished_at"
+        ],
+        "title": "ResultOut"
+      },
+      "ScenarioDetail": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "version": {
+            "type": "integer",
+            "title": "Version"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "summary": {
+            "type": "string",
+            "title": "Summary"
+          },
+          "category": {
+            "type": "string",
+            "title": "Category"
+          },
+          "category_title": {
+            "type": "string",
+            "title": "Category Title"
+          },
+          "difficulty": {
+            "type": "integer",
+            "title": "Difficulty"
+          },
+          "service_class": {
+            "type": "string",
+            "title": "Service Class"
+          },
+          "service_class_title": {
+            "type": "string",
+            "title": "Service Class Title"
+          },
+          "competencies": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Competencies"
+          },
+          "decisions": {
+            "type": "integer",
+            "title": "Decisions"
+          },
+          "has_timer": {
+            "type": "boolean",
+            "title": "Has Timer"
+          },
+          "my_attempts": {
+            "type": "integer",
+            "title": "My Attempts",
+            "default": 0
+          },
+          "my_best_outcome": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "My Best Outcome"
+          },
+          "active_attempt_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Active Attempt Id"
+          },
+          "briefing": {
+            "type": "string",
+            "title": "Briefing"
+          },
+          "sources": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Sources"
+          },
+          "initial_loyalty": {
+            "type": "integer",
+            "title": "Initial Loyalty"
+          },
+          "initial_safety": {
+            "type": "integer",
+            "title": "Initial Safety"
+          },
+          "hud": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "type": "object",
+            "title": "Hud"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "version",
+          "title",
+          "summary",
+          "category",
+          "category_title",
+          "difficulty",
+          "service_class",
+          "service_class_title",
+          "competencies",
+          "decisions",
+          "has_timer",
+          "briefing",
+          "sources",
+          "initial_loyalty",
+          "initial_safety",
+          "hud"
+        ],
+        "title": "ScenarioDetail"
+      },
+      "ScenarioSummary": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "version": {
+            "type": "integer",
+            "title": "Version"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "summary": {
+            "type": "string",
+            "title": "Summary"
+          },
+          "category": {
+            "type": "string",
+            "title": "Category"
+          },
+          "category_title": {
+            "type": "string",
+            "title": "Category Title"
+          },
+          "difficulty": {
+            "type": "integer",
+            "title": "Difficulty"
+          },
+          "service_class": {
+            "type": "string",
+            "title": "Service Class"
+          },
+          "service_class_title": {
+            "type": "string",
+            "title": "Service Class Title"
+          },
+          "competencies": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Competencies"
+          },
+          "decisions": {
+            "type": "integer",
+            "title": "Decisions"
+          },
+          "has_timer": {
+            "type": "boolean",
+            "title": "Has Timer"
+          },
+          "my_attempts": {
+            "type": "integer",
+            "title": "My Attempts",
+            "default": 0
+          },
+          "my_best_outcome": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "My Best Outcome"
+          },
+          "active_attempt_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Active Attempt Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "version",
+          "title",
+          "summary",
+          "category",
+          "category_title",
+          "difficulty",
+          "service_class",
+          "service_class_title",
+          "competencies",
+          "decisions",
+          "has_timer"
+        ],
+        "title": "ScenarioSummary"
+      },
+      "ScenarioUpload": {
+        "properties": {
+          "content": {
+            "type": "string",
+            "maxLength": 200000,
+            "minLength": 1,
+            "title": "Content",
+            "description": "Текст сценария в формате YAML или JSON"
+          }
+        },
+        "type": "object",
+        "required": [
+          "content"
+        ],
+        "title": "ScenarioUpload"
+      },
+      "StartRequest": {
+        "properties": {
+          "scenario_id": {
+            "type": "string",
+            "title": "Scenario Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "scenario_id"
+        ],
+        "title": "StartRequest"
+      },
+      "UserOut": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "login": {
+            "type": "string",
+            "title": "Login"
+          },
+          "display_name": {
+            "type": "string",
+            "title": "Display Name"
+          },
+          "employee_code": {
+            "type": "string",
+            "title": "Employee Code"
+          },
+          "role": {
+            "type": "string",
+            "title": "Role"
+          },
+          "brigade": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Brigade"
+          },
+          "depot": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Depot"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "login",
+          "display_name",
+          "employee_code",
+          "role",
+          "brigade",
+          "depot"
+        ],
+        "title": "UserOut"
+      },
+      "ValidationError": {
+        "properties": {
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Location"
+          },
+          "msg": {
+            "type": "string",
+            "title": "Message"
+          },
+          "type": {
+            "type": "string",
+            "title": "Error Type"
+          },
+          "input": {
+            "title": "Input"
+          },
+          "ctx": {
+            "type": "object",
+            "title": "Context"
+          }
+        },
+        "type": "object",
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError"
+      },
+      "ValidationResult": {
+        "properties": {
+          "valid": {
+            "type": "boolean",
+            "title": "Valid"
+          },
+          "errors": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Errors",
+            "default": []
+          },
+          "scenario": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ScenarioSummary"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "valid"
+        ],
+        "title": "ValidationResult"
+      }
+    },
+    "securitySchemes": {
+      "HTTPBearer": {
+        "type": "http",
+        "description": "JWT из POST /api/v1/auth/login",
+        "scheme": "bearer"
+      }
+    }
+  }
+}
