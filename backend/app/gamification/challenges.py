@@ -1,4 +1,4 @@
-"""Челленджи — задания с периодом действия и наградой XP (content/challenges.yaml)."""
+"""Челленджи — задания с периодом действия и наградой в очках опыта (content/challenges.yaml)."""
 
 from datetime import date, datetime, time, timedelta
 from functools import lru_cache
@@ -55,7 +55,7 @@ def completed_ids(db: Session, user_id: int) -> dict[str, datetime]:
 
 
 def evaluate(db: Session, user: User, attempts: list[Attempt], now: datetime) -> list[ChallengeDef]:
-    """Засчитывает выполненные активные челленджи: запись, награда XP, уведомление."""
+    """Засчитывает выполненные активные челленджи: запись, награда очками опыта, уведомление."""
     done = completed_ids(db, user.id)
     completed = []
     for challenge in active(now):
@@ -64,7 +64,7 @@ def evaluate(db: Session, user: User, attempts: list[Attempt], now: datetime) ->
         db.add(UserChallenge(user_id=user.id, challenge_id=challenge.id, completed_at=now))
         points.grant(db, user.id, challenge.reward_xp, "challenge", challenge.id, at=now)
         notify(db, user.id, "challenge_completed", f"Челлендж выполнен: {challenge.title}",
-               f"Награда: +{challenge.reward_xp} XP.", link="/", dedup_key=f"challenge-done:{challenge.id}")
+               f"Награда: +{points.experience_text(challenge.reward_xp)}.", link="/", dedup_key=f"challenge-done:{challenge.id}")
         completed.append(challenge)
     return completed
 

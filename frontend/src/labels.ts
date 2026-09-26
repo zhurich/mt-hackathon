@@ -79,6 +79,14 @@ export function percent(share: number): string {
   return `${Math.round(share * 100)} %`
 }
 
+/** Склонение: «1 очко опыта», «3 очка опыта», «10 очков опыта». */
+export function experience(amount: number): string {
+  const tail = Math.abs(amount) % 100
+  const last = tail % 10
+  const word = tail >= 11 && tail <= 14 ? 'очков' : last === 1 ? 'очко' : last >= 2 && last <= 4 ? 'очка' : 'очков'
+  return `${amount} ${word} опыта`
+}
+
 export function signed(value: number): string {
   return value > 0 ? `+${value}` : String(value)
 }

@@ -64,7 +64,7 @@ export function AnalyticsView({ data }: { data: Analytics }) {
       )}
 
       <section className="card">
-        <h2>XP за 30 дней</h2>
+        <h2>Очки опыта за 30 дней</h2>
         <XpBars series={data.xp_by_day} />
       </section>
 

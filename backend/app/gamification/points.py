@@ -1,4 +1,4 @@
-"""XP и баллы рейтинга.
+"""Очки опыта и баллы рейтинга.
 
 Каждое начисление — строка xp_grants. Сумма всех начислений определяет уровень (не сгорает),
 начисления за последние POINTS_TTL_DAYS дней — «активные баллы» для рейтинга (сгорают).
@@ -12,6 +12,16 @@ from sqlalchemy.orm import Session
 from app.config import get_settings
 from app.models import XpGrant
 from app.timeutil import utcnow
+
+
+def experience_text(amount: int) -> str:
+    """Склонение для текстов: «1 очко опыта», «3 очка опыта», «10 очков опыта»."""
+    tail = abs(amount) % 100
+    if 11 <= tail <= 14:
+        word = "очков"
+    else:
+        word = {1: "очко", 2: "очка", 3: "очка", 4: "очка"}.get(tail % 10, "очков")
+    return f"{amount} {word} опыта"
 
 
 def grant(db: Session, user_id: int, amount: int, reason: str, ref: str, at: datetime | None = None) -> None:

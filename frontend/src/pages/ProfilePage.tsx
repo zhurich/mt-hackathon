@@ -4,7 +4,7 @@ import { api } from '../api/client'
 import type { AttemptHistoryItem, Profile } from '../api/types'
 import { useAuth } from '../auth'
 import { Async, OutcomeChip, ProgressBar } from '../components/ui'
-import { ACHIEVEMENT_ICON, formatDate, formatDateTime } from '../labels'
+import { ACHIEVEMENT_ICON, experience, formatDate, formatDateTime } from '../labels'
 
 export default function ProfilePage() {
   const { logout } = useAuth()
@@ -25,7 +25,7 @@ export default function ProfilePage() {
                 </div>
                 <div className="spread small" style={{ marginTop: 8 }}>
                   <strong>{data.level.title}</strong>
-                  <span className="muted tabular">{data.total_xp} XP</span>
+                  <span className="muted tabular">{experience(data.total_xp)}</span>
                 </div>
                 <ProgressBar value={data.level.progress} label="Прогресс уровня" />
                 <div className="row small muted">
@@ -82,7 +82,7 @@ export default function ProfilePage() {
                     </div>
                     <div className="stack" style={{ gap: 4, alignItems: 'flex-end' }}>
                       <OutcomeChip outcome={item.outcome} />
-                      <span className="small muted">+{item.xp} XP</span>
+                      <span className="small muted">+{experience(item.xp)}</span>
                     </div>
                   </Link>
                 ))}

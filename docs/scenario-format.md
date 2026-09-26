@@ -17,7 +17,7 @@ version: 1                      # увеличивайте при изменен
 title: Электронная сигарета в салоне
 summary: Пассажир бизнес-класса курит вейп на своём месте.
 category: safety                # medical | conflict | safety | service | accessibility
-difficulty: 2                   # 1..3, влияет на бонус XP за исход
+difficulty: 2                   # 1..3, влияет на бонус очков опыта за исход
 service_class: business         # standard | comfort | business | first
 sources:                        # ссылки на регламенты — показываются в разборе
   - "Ситуации на борту, №20"

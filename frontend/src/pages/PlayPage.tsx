@@ -3,7 +3,7 @@ import { Link, useLocation, useNavigate, useParams } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
 import { api } from '../api/client'
 import type { AttemptView } from '../api/types'
-import { ACHIEVEMENT_ICON, SPEAKER } from '../labels'
+import { ACHIEVEMENT_ICON, SPEAKER, experience } from '../labels'
 import { ErrorBox, Loader, OutcomeChip, ProgressBar, ScaleBar } from '../components/ui'
 
 interface TranscriptItem {
@@ -175,10 +175,10 @@ function Result({ view, onRetry }: { view: AttemptView; onRetry: () => void }) {
         <div className="card stack" style={{ gap: '0.6rem' }}>
           <div className="spread">
             <span>Получено</span>
-            <strong className="big-number">+{rewards.xp} XP</strong>
+            <strong className="big-number">+{experience(rewards.xp)}</strong>
           </div>
           {rewards.level_up && <div className="alert alert-positive">⬆️ Новый уровень: <strong>{rewards.level.title}</strong></div>}
-          <div className="small muted">{rewards.level.title}{rewards.level.next_xp ? ` · ${rewards.level.xp} / ${rewards.level.next_xp} XP` : ''}</div>
+          <div className="small muted">{rewards.level.title}{rewards.level.next_xp ? ` · ${rewards.level.xp} / ${experience(rewards.level.next_xp)}` : ''}</div>
           <ProgressBar value={rewards.level.progress} label="Прогресс уровня" />
           {rewards.new_achievements.map((item) => (
             <div key={item.code} className="alert alert-positive">
@@ -187,7 +187,7 @@ function Result({ view, onRetry }: { view: AttemptView; onRetry: () => void }) {
             </div>
           ))}
           {rewards.completed_challenges.map((item) => (
-            <div key={item.id} className="alert alert-positive">🏁 Челлендж «{item.title}» выполнен: +{item.reward_xp} XP</div>
+            <div key={item.id} className="alert alert-positive">🏁 Челлендж «{item.title}» выполнен: +{experience(item.reward_xp)}</div>
           ))}
         </div>
       )}

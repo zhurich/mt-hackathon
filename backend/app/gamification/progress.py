@@ -34,7 +34,7 @@ def _store_result(attempt: Attempt, result: AttemptResult, now: datetime) -> Non
 def finish_attempt(
     db: Session, user: User, attempt: Attempt, scenario: Scenario, state: GameState, now: datetime
 ) -> dict:
-    """Подсчитывает итоги, начисляет XP, обновляет мастерство, выдаёт достижения и челленджи."""
+    """Подсчитывает итоги, начисляет очки опыта, обновляет мастерство, выдаёт достижения и челленджи."""
     level_before = level_info(points.total_xp(db, user.id))
 
     result = score_attempt(scenario, state)

@@ -46,7 +46,7 @@ def refresh(db: Session, user: User, now: datetime) -> None:
 
     for challenge in challenges.active(now):
         notify(db, user.id, "new_challenge", f"Челлендж: {challenge.title}",
-               f"{challenge.description} Награда: +{challenge.reward_xp} XP до {challenge.ends:%d.%m}.",
+               f"{challenge.description} Награда: +{points.experience_text(challenge.reward_xp)} до {challenge.ends:%d.%m}.",
                link="/", dedup_key=f"challenge:{challenge.id}")
 
     expiring = points.expiring_soon(db, user.id, now)

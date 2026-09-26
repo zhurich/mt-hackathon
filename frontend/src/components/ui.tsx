@@ -1,7 +1,7 @@
 import { useState, type ReactNode } from 'react'
 import { ApiError } from '../api/client'
 import type { Competency, Outcome } from '../api/types'
-import { COMPETENCY_STATUS, OUTCOME, formatDate, signed } from '../labels'
+import { COMPETENCY_STATUS, OUTCOME, experience, formatDate, signed } from '../labels'
 
 export function Loader() {
   return <p className="muted">Загрузка…</p>
@@ -51,7 +51,7 @@ export function ScaleBar({ label, value, delta, color }: { label: string; value:
   )
 }
 
-/** Столбики XP по дням (одна серия): подсказка при наведении/фокусе, значения доступны скринридеру. */
+/** Столбики очков опыта по дням (одна серия): подсказка при наведении/фокусе, значения доступны скринридеру. */
 export function XpBars({ series }: { series: { date: string; xp: number }[] }) {
   const [active, setActive] = useState<number | null>(null)
   const max = Math.max(1, ...series.map((point) => point.xp))
@@ -64,20 +64,20 @@ export function XpBars({ series }: { series: { date: string; xp: number }[] }) {
             key={point.date}
             className="bar-hit"
             tabIndex={0}
-            aria-label={`${formatDate(point.date)}: ${point.xp} XP`}
+            aria-label={`${formatDate(point.date)}: ${experience(point.xp)}`}
             onMouseEnter={() => setActive(index)}
             onFocus={() => setActive(index)}
             onBlur={() => setActive(null)}
             style={{ position: 'relative' }}
           >
             <div className="bar" style={{ height: `${(point.xp / max) * 100}%` }} />
-            {active === index && <span className="tooltip">{formatDate(point.date)} · {point.xp} XP</span>}
+            {active === index && <span className="tooltip">{formatDate(point.date)} · {experience(point.xp)}</span>}
           </div>
         ))}
       </div>
       <figcaption className="spread small muted" style={{ marginTop: 4 }}>
         <span>{formatDate(series[0].date)}</span>
-        <span>Всего за период: {total} XP</span>
+        <span>Всего за период: {experience(total)}</span>
         <span>{formatDate(series[series.length - 1].date)}</span>
       </figcaption>
     </figure>

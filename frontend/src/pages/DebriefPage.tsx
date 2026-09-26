@@ -3,7 +3,7 @@ import { useQuery } from '@tanstack/react-query'
 import { api } from '../api/client'
 import type { Debrief, DebriefStep, Profile } from '../api/types'
 import { Async, OutcomeChip } from '../components/ui'
-import { QUALITY, signed } from '../labels'
+import { QUALITY, experience, signed } from '../labels'
 
 function Delta({ label, value }: { label: string; value: number }) {
   if (value === 0) return <span className="chip">{label}: 0</span>
@@ -73,7 +73,7 @@ export default function DebriefPage() {
                 <div><div className="muted">Безопасность</div><strong className="big-number">{result.final_safety}</strong></div>
                 <div><div className="muted">Лучших решений</div><strong className="big-number">{result.best_decisions}/{result.decisions}</strong></div>
               </div>
-              <div className="small muted">+{result.xp} XP{result.timeouts > 0 ? ` · таймаутов: ${result.timeouts}` : ''}</div>
+              <div className="small muted">+{experience(result.xp)}{result.timeouts > 0 ? ` · таймаутов: ${result.timeouts}` : ''}</div>
             </section>
 
             <section className="card stack" style={{ gap: '0.5rem' }}>

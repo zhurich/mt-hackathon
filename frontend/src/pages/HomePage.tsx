@@ -3,7 +3,7 @@ import { useQuery } from '@tanstack/react-query'
 import { api } from '../api/client'
 import type { Analytics, Profile, ScenarioSummary } from '../api/types'
 import { Async, ProgressBar } from '../components/ui'
-import { formatDate } from '../labels'
+import { experience, formatDate } from '../labels'
 
 export default function HomePage() {
   const profile = useQuery({ queryKey: ['profile'], queryFn: () => api.get<Profile>('/profile') })
@@ -27,7 +27,7 @@ export default function HomePage() {
               <div className="spread small">
                 <strong>{data.level.title}</strong>
                 <span className="muted tabular">
-                  {data.level.next_xp ? `${data.total_xp} / ${data.level.next_xp} XP` : `${data.total_xp} XP · максимум`}
+                  {data.level.next_xp ? `${data.total_xp} / ${experience(data.level.next_xp)}` : `${experience(data.total_xp)} · максимум`}
                 </span>
               </div>
               <ProgressBar value={data.level.progress} label="Прогресс до следующего уровня" />
@@ -61,7 +61,7 @@ export default function HomePage() {
                   <div key={challenge.id} className="card stack" style={{ gap: '0.4rem' }}>
                     <div className="spread">
                       <strong>{challenge.title}</strong>
-                      <span className="chip">+{challenge.reward_xp} XP</span>
+                      <span className="chip">+{experience(challenge.reward_xp)}</span>
                     </div>
                     <div className="small secondary">{challenge.description}</div>
                     <ProgressBar value={challenge.progress / challenge.target} label={challenge.title} />
