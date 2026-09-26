@@ -10,8 +10,8 @@ import type { Handle, Position, ScenarioDoc } from './types'
 
 // Цвета связей повторяют значки качества в узлах; тип связи различается и формой линии.
 const EDGE_COLOR: Record<string, string> = {
-  best: 'var(--good)', good: 'var(--good)', poor: 'var(--warning)', bad: 'var(--critical)',
-  timeout: 'var(--critical)', route: 'var(--series-1)',
+  best: 'var(--good)', good: 'var(--good-text)', poor: 'var(--warning-text)', bad: 'var(--critical)',
+  timeout: 'var(--critical)', route: 'var(--text-2)',
 }
 
 interface Props {

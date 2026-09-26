@@ -2,7 +2,9 @@
 // поэтому связь «куда ведёт вариант» задаётся перетаскиванием от строки варианта к узлу.
 
 import { Handle, Position, type Node, type NodeProps } from '@xyflow/react'
-import { OUTCOME, QUALITY } from '../labels'
+import { Chip, Icon, type IconName } from '../components/ui'
+import { OUTCOME } from '../labels'
+import { QualityMark } from './fields'
 import { handleId } from './model'
 import type { ChoiceNodeDoc, EndingNodeDoc, NodeDoc, RouterNodeDoc } from './types'
 
@@ -16,16 +18,16 @@ export interface FlowNodeData extends Record<string, unknown> {
 
 export type FlowNode = Node<FlowNodeData>
 
-function Header({ icon, kind, data, extra }: { icon: string; kind: string; data: FlowNodeData; extra?: string }) {
+function Header({ icon, kind, data, extra }: { icon: IconName; kind: string; data: FlowNodeData; extra?: string }) {
   return (
     <div className="fnode-head">
-      <span className="fnode-kind">{icon} {kind}</span>
+      <span className="fnode-kind"><Icon name={icon} size={14} />{kind}</span>
       <span className="fnode-id">{data.nodeId}</span>
-      {data.isStart && <span className="fbadge fbadge-start" title="Стартовый узел">▶ старт</span>}
-      {data.isInterruptTarget && <span className="fbadge" title="Сюда ведёт прерывание по шкале">⚡</span>}
-      {extra && <span className="fbadge">{extra}</span>}
+      {data.isStart && <span className="fbadge fbadge-start" title="Стартовый узел"><Icon name="play" size={10} />старт</span>}
+      {data.isInterruptTarget && <span className="fbadge" title="Сюда ведёт прерывание по шкале"><Icon name="zap" size={10} /></span>}
+      {extra && <span className="fbadge"><Icon name="timer" size={10} />{extra}</span>}
       {data.issues.length > 0 && (
-        <span className="fbadge fbadge-error" title={data.issues.join('\n')}>✕ {data.issues.length}</span>
+        <span className="fbadge fbadge-error" title={data.issues.join('\n')}><Icon name="x" size={10} />{data.issues.length}</span>
       )}
     </div>
   )
@@ -48,13 +50,12 @@ function ChoiceFlowNode({ data, selected }: NodeProps<FlowNode>) {
   return (
     <div className={frameClass('choice', selected, data)}>
       <In />
-      <Header icon="💬" kind="Решение" data={data} extra={node.timer ? `⏱ ${node.timer} с` : undefined} />
+      <Header icon="message-square" kind="Решение" data={data} extra={node.timer ? `${node.timer} с` : undefined} />
       <div className="fnode-text">{node.text || <em>Текст ситуации не задан</em>}</div>
       {node.choices.map((choice, index) => {
-        const quality = QUALITY[choice.quality]
         return (
           <div key={index} className="fnode-row">
-            <span className={`fq fq-${choice.quality}`} title={quality.title}>{quality.icon}</span>
+            <QualityMark quality={choice.quality} />
             <span className="fnode-row-text">{choice.text || <em>{choice.id}</em>}</span>
             {choice.if.length > 0 && <span className="fnode-cond" title={choice.if.join(' и ')}>если…</span>}
             <Out id={handleId({ kind: 'choice', index })} unlinked={!choice.next} />
@@ -63,7 +64,7 @@ function ChoiceFlowNode({ data, selected }: NodeProps<FlowNode>) {
       })}
       {node.on_timeout && (
         <div className="fnode-row fnode-row-timeout">
-          <span className="fq fq-bad">⏱</span>
+          <QualityMark quality="timeout" />
           <span className="fnode-row-text">Время вышло</span>
           <Out id="timeout" unlinked={!node.on_timeout.next} />
         </div>
@@ -77,7 +78,7 @@ function RouterFlowNode({ data, selected }: NodeProps<FlowNode>) {
   return (
     <div className={frameClass('router', selected, data)}>
       <In />
-      <Header icon="🔀" kind="Условие" data={data} />
+      <Header icon="split" kind="Условие" data={data} />
       {node.routes.map((route, index) => (
         <div key={index} className="fnode-row">
           <span className="fnode-row-text mono">{route.if.length ? route.if.join(' и ') : 'иначе'}</span>
@@ -94,9 +95,9 @@ function EndingFlowNode({ data, selected }: NodeProps<FlowNode>) {
   return (
     <div className={frameClass(`ending fnode-${node.outcome}`, selected, data)}>
       <In />
-      <Header icon="🏁" kind="Финал" data={data} />
+      <Header icon="flag" kind="Финал" data={data} />
       <div className="fnode-text">
-        <span className={`chip tone-${outcome.tone}`}>{outcome.icon} {outcome.title}</span> {node.title}
+        <Chip tone={outcome.tone} icon={outcome.icon}>{outcome.title}</Chip> {node.title}
       </div>
     </div>
   )

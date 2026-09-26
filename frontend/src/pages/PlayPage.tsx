@@ -1,10 +1,12 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { Link, useLocation, useNavigate, useParams } from 'react-router-dom'
+import { useLocation, useNavigate, useParams } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
 import { api } from '../api/client'
 import type { AttemptView } from '../api/types'
-import { ACHIEVEMENT_ICON, SPEAKER, experience } from '../labels'
-import { ErrorBox, Loader, OutcomeChip, ProgressBar, ScaleBar } from '../components/ui'
+import { ACHIEVEMENT_ICON, SPEAKER, SPEAKER_ICON, experience } from '../labels'
+import {
+  Alert, Button, Card, ChoiceButton, ErrorBox, IconButton, Loader, OutcomeChip, ProgressBar, ScaleBar, SpeechBubble, Stat, Timer,
+} from '../components/ui'
 
 interface TranscriptItem {
   speaker: string
@@ -55,7 +57,7 @@ export default function PlayPage() {
       submitting.current = true
       setBusy(true)
       const node = view.node
-      const answer = choiceId ? node.choices.find((c) => c.id === choiceId)?.text ?? '' : '⏱ Вы не успели принять решение'
+      const answer = choiceId ? node.choices.find((c) => c.id === choiceId)?.text ?? '' : 'Вы не успели принять решение'
       try {
         const next = await api.post<AttemptView>(
           `/attempts/${view.id}/decisions`,
@@ -87,77 +89,68 @@ export default function PlayPage() {
   if (!view) return <Loader />
 
   const delta = view.last?.delta
+  const node = view.node
 
   return (
-    <div className="stack">
-      <div className="spread">
-        <Link to="/scenarios" className="small muted">✕ Выйти</Link>
-        <strong className="small">{view.scenario_title}</strong>
-        <span className="small muted">Шаг {view.step + (view.node ? 1 : 0)}</span>
+    <>
+      <div className="row" style={{ flexWrap: 'nowrap', margin: '-8px -8px 0' }}>
+        <IconButton icon="x" label="Выйти к сценариям" onClick={() => navigate('/scenarios')} />
+        <strong className="grow label strong">{view.scenario_title}</strong>
+        <span className="small muted" style={{ paddingRight: 8 }}>{node ? `Шаг ${view.step + 1}` : 'Финал'}</span>
       </div>
 
-      <section className="card stack" style={{ gap: '0.5rem' }} aria-label="Шкалы">
-        <ScaleBar label="Лояльность" value={view.loyalty} delta={delta?.loyalty} color="var(--series-1)" />
-        <ScaleBar label="Безопасность" value={view.safety} delta={delta?.safety} color="var(--series-2)" />
+      <Card as="section" gap={10} aria-label="Шкалы">
+        <ScaleBar label="Лояльность" value={view.loyalty} delta={delta?.loyalty} />
+        <ScaleBar label="Безопасность" kind="safety" value={view.safety} delta={delta?.safety} />
         {view.hud.map((item) => (
           <div key={item.name} className="spread small">
             <span className="secondary">{item.label}</span>
             <strong className="tabular">{Math.max(0, item.value)}</strong>
           </div>
         ))}
-      </section>
+      </Card>
 
       {view.last?.timed_out && view.status === 'active' && (
-        <div className="alert alert-critical small">⏱ Время вышло — ситуация развивается без вашего участия.</div>
+        <Alert tone="critical" icon="timer">Время вышло — ситуация развивается без Вашего участия.</Alert>
       )}
       {view.last?.interrupted && (
-        <div className="alert alert-critical small">⚠ Шкала упала до критического уровня — ситуация резко изменилась.</div>
+        <Alert tone="critical" icon="triangle-alert">Шкала упала до критического уровня — ситуация резко изменилась.</Alert>
       )}
 
       {transcript.length > 0 && (
-        <details className="small">
-          <summary className="muted">Ход событий ({transcript.length})</summary>
-          <ol className="stack" style={{ gap: '0.4rem', paddingLeft: '1.2rem', marginTop: '0.5rem' }}>
-            {transcript.map((item, index) => (
-              <li key={index}>
-                <div className="muted">{item.situation}</div>
-                <div>Вы: {item.answer}</div>
-              </li>
-            ))}
-          </ol>
-        </details>
+        <Card tone="muted" padding="sm">
+          <details className="transcript">
+            <summary>Ход событий ({transcript.length})</summary>
+            <ol>
+              {transcript.map((item, index) => (
+                <li key={index}>
+                  <div className="muted">{item.situation}</div>
+                  <div>Вы: {item.answer}</div>
+                </li>
+              ))}
+            </ol>
+          </details>
+        </Card>
       )}
 
-      {view.node && (
-        <section className="stack" style={{ gap: '0.75rem' }}>
-          {view.node.timer && remaining !== null && (
-            <div>
-              <div className="spread small">
-                <span className="muted">Время на решение</span>
-                <strong className="tabular">{Math.ceil(remaining / 1000)} с</strong>
-              </div>
-              <div className={`timer ${remaining < 5000 ? 'urgent' : ''}`}>
-                <div style={{ width: `${(remaining / (view.node.timer * 1000)) * 100}%` }} />
-              </div>
-            </div>
-          )}
-          <div className="bubble">
-            <div className="bubble-speaker">{view.node.speaker_name ?? SPEAKER[view.node.speaker]}</div>
-            <div className="bubble-text">{view.node.text}</div>
-          </div>
-          <div className="stack" style={{ gap: '0.5rem' }} role="group" aria-label="Варианты действий">
-            {view.node.choices.map((choice) => (
-              <button key={choice.id} className="choice" disabled={busy} onClick={() => submit(choice.id)}>
-                {choice.text}
-              </button>
+      {node && (
+        <>
+          {node.timer && remaining !== null && <Timer remainingMs={remaining} totalMs={node.timer * 1000} />}
+          <SpeechBubble kind={node.speaker === 'narrator' ? 'narrator' : 'person'} icon={SPEAKER_ICON[node.speaker]}
+                        speaker={node.speaker_name ?? SPEAKER[node.speaker]}>
+            {node.text}
+          </SpeechBubble>
+          <div className="stack" style={{ gap: 8 }} role="group" aria-label="Варианты действий">
+            {node.choices.map((choice) => (
+              <ChoiceButton key={choice.id} disabled={busy} onClick={() => submit(choice.id)}>{choice.text}</ChoiceButton>
             ))}
           </div>
           {error !== null && <ErrorBox error={error} />}
-        </section>
+        </>
       )}
 
       {view.ending && <Result view={view} onRetry={() => navigate(`/scenarios/${view.scenario_id}`)} />}
-    </div>
+    </>
   )
 }
 
@@ -165,37 +158,46 @@ function Result({ view, onRetry }: { view: AttemptView; onRetry: () => void }) {
   const ending = view.ending!
   const rewards = view.rewards
   return (
-    <section className="stack">
-      <div className="card stack" style={{ gap: '0.5rem' }}>
-        <OutcomeChip outcome={ending.outcome} />
-        <h2 style={{ margin: 0 }}>{ending.title}</h2>
+    <>
+      <Card>
+        <div><OutcomeChip outcome={ending.outcome} /></div>
+        <h2>{ending.title}</h2>
         <p className="secondary">{ending.text}</p>
-      </div>
+        <div className="grid-halves" style={{ marginTop: 4, gap: 8 }}>
+          <Stat label="Лояльность" value={view.loyalty} />
+          <Stat label="Безопасность" value={view.safety} />
+        </div>
+      </Card>
       {rewards && (
-        <div className="card stack" style={{ gap: '0.6rem' }}>
-          <div className="spread">
+        <Card>
+          <div className="spread" style={{ alignItems: 'baseline' }}>
             <span>Получено</span>
-            <strong className="big-number">+{experience(rewards.xp)}</strong>
+            <strong className="h2">+{experience(rewards.xp)}</strong>
           </div>
-          {rewards.level_up && <div className="alert alert-positive">⬆️ Новый уровень: <strong>{rewards.level.title}</strong></div>}
-          <div className="small muted">{rewards.level.title}{rewards.level.next_xp ? ` · ${rewards.level.xp} / ${experience(rewards.level.next_xp)}` : ''}</div>
+          <div className="small muted">
+            {rewards.level.title}{rewards.level.next_xp ? ` · ${rewards.level.xp} / ${rewards.level.next_xp}` : ''}
+          </div>
           <ProgressBar value={rewards.level.progress} label="Прогресс уровня" />
+          {rewards.level_up && (
+            <Alert tone="positive" icon="trending-up" title={`Новый уровень: ${rewards.level.title}`} />
+          )}
           {rewards.new_achievements.map((item) => (
-            <div key={item.code} className="alert alert-positive">
-              {ACHIEVEMENT_ICON[item.icon] ?? '🏅'} Достижение: <strong>{item.title}</strong>
-              <div className="small secondary">{item.description}</div>
-            </div>
+            <Alert key={item.code} tone="positive" icon={ACHIEVEMENT_ICON[item.icon] ?? 'award'} title={`Достижение: ${item.title}`}>
+              {item.description}
+            </Alert>
           ))}
           {rewards.completed_challenges.map((item) => (
-            <div key={item.id} className="alert alert-positive">🏁 Челлендж «{item.title}» выполнен: +{experience(item.reward_xp)}</div>
+            <Alert key={item.id} tone="positive" icon="flag" title={`Челлендж «${item.title}» выполнен`}>
+              +{experience(item.reward_xp)}
+            </Alert>
           ))}
-        </div>
+        </Card>
       )}
-      <Link to={`/attempts/${view.id}/debrief`} className="btn btn-primary btn-block">Разбор решений</Link>
-      <div className="grid grid-2">
-        <button className="btn" onClick={onRetry}>Пройти ещё раз</button>
-        <Link to="/scenarios" className="btn">К сценариям</Link>
+      <Button block to={`/attempts/${view.id}/debrief`}>Разбор решений</Button>
+      <div className="grid-halves" style={{ gap: 8 }}>
+        <Button variant="secondary" onClick={onRetry}>Пройти ещё раз</Button>
+        <Button variant="secondary" to="/scenarios">К сценариям</Button>
       </div>
-    </section>
+    </>
   )
 }

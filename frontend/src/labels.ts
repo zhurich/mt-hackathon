@@ -1,26 +1,36 @@
 // Подписи и значки для кодов, приходящих с backend.
 
 import type { CompetencyStatus, Outcome, Quality } from './api/types'
+import type { IconName } from './components/Icon'
 
-export const OUTCOME: Record<Outcome, { title: string; icon: string; tone: string }> = {
-  success: { title: 'Успех', icon: '✓', tone: 'good' },
-  partial: { title: 'Частично', icon: '◐', tone: 'warning' },
-  fail: { title: 'Провал', icon: '✕', tone: 'critical' },
+/** Тон метки статуса (Chip). Статус всегда кодируется иконкой и текстом, а не только цветом. */
+export type Tone = 'neutral' | 'accent' | 'info' | 'good' | 'warning' | 'critical'
+
+interface Status {
+  title: string
+  icon: IconName
+  tone: Tone
 }
 
-export const QUALITY: Record<Quality, { title: string; icon: string; tone: string }> = {
-  best: { title: 'Лучшее решение', icon: '★', tone: 'good' },
-  good: { title: 'Хорошее решение', icon: '✓', tone: 'good' },
-  poor: { title: 'Слабое решение', icon: '!', tone: 'warning' },
-  bad: { title: 'Ошибка', icon: '✕', tone: 'critical' },
-  timeout: { title: 'Время вышло', icon: '⏱', tone: 'critical' },
+export const OUTCOME: Record<Outcome, Status> = {
+  success: { title: 'Успех', icon: 'check', tone: 'good' },
+  partial: { title: 'Частично', icon: 'circle-dot-dashed', tone: 'warning' },
+  fail: { title: 'Провал', icon: 'x', tone: 'critical' },
 }
 
-export const COMPETENCY_STATUS: Record<CompetencyStatus, { title: string; icon: string; tone: string }> = {
-  mastered: { title: 'Освоена', icon: '✓', tone: 'good' },
-  developing: { title: 'Развивается', icon: '↗', tone: 'neutral' },
-  weak: { title: 'Проседает', icon: '!', tone: 'critical' },
-  untested: { title: 'Нет данных', icon: '—', tone: 'neutral' },
+export const QUALITY: Record<Quality, Status> = {
+  best: { title: 'Лучшее решение', icon: 'star', tone: 'good' },
+  good: { title: 'Хорошее решение', icon: 'check', tone: 'good' },
+  poor: { title: 'Слабое решение', icon: 'circle-alert', tone: 'warning' },
+  bad: { title: 'Ошибка', icon: 'x', tone: 'critical' },
+  timeout: { title: 'Время вышло', icon: 'timer', tone: 'critical' },
+}
+
+export const COMPETENCY_STATUS: Record<CompetencyStatus, Status> = {
+  mastered: { title: 'Освоена', icon: 'check', tone: 'good' },
+  developing: { title: 'Развивается', icon: 'trending-up', tone: 'neutral' },
+  weak: { title: 'Проседает', icon: 'circle-alert', tone: 'critical' },
+  untested: { title: 'Нет данных', icon: 'minus', tone: 'neutral' },
 }
 
 export const SPEAKER: Record<string, string> = {
@@ -33,38 +43,45 @@ export const SPEAKER: Record<string, string> = {
   system: 'Система',
 }
 
-export const CATEGORY_ICON: Record<string, string> = {
-  medical: '🩺',
-  conflict: '🗣️',
-  safety: '🛡️',
-  service: '☕',
-  accessibility: '♿',
+export const SPEAKER_ICON: Record<string, IconName> = {
+  narrator: 'file-text',
+  radio: 'radio',
+  system: 'info',
 }
 
-export const ACHIEVEMENT_ICON: Record<string, string> = {
-  train: '🚄',
-  medal: '🎖️',
-  star: '⭐',
-  chat: '💬',
-  snowflake: '❄️',
-  'heart-pulse': '🩺',
-  handshake: '🤝',
-  shield: '🛡️',
-  smile: '😊',
-  accessibility: '♿',
-  quote: '🗨️',
-  flame: '🔥',
-  crown: '👑',
-  trophy: '🏆',
+export const CATEGORY_ICON: Record<string, IconName> = {
+  medical: 'stethoscope',
+  conflict: 'messages-square',
+  safety: 'shield',
+  service: 'coffee',
+  accessibility: 'accessibility',
 }
 
-export const NOTIFICATION_ICON: Record<string, string> = {
-  new_scenario: '🆕',
-  new_challenge: '🎯',
-  challenge_completed: '🏁',
-  achievement: '🏅',
-  level_up: '⬆️',
-  points_expiring: '⏳',
+/** Коды иконок достижений из backend/content/achievements.yaml. */
+export const ACHIEVEMENT_ICON: Record<string, IconName> = {
+  train: 'train-front',
+  medal: 'medal',
+  star: 'star',
+  chat: 'messages-square',
+  snowflake: 'snowflake',
+  'heart-pulse': 'heart-pulse',
+  handshake: 'handshake',
+  shield: 'shield',
+  smile: 'smile',
+  accessibility: 'accessibility',
+  quote: 'quote',
+  flame: 'flame',
+  crown: 'crown',
+  trophy: 'trophy',
+}
+
+export const NOTIFICATION_ICON: Record<string, IconName> = {
+  new_scenario: 'train-front',
+  new_challenge: 'target',
+  challenge_completed: 'flag',
+  achievement: 'award',
+  level_up: 'trending-up',
+  points_expiring: 'hourglass',
 }
 
 export function formatDate(iso: string): string {
@@ -76,7 +93,7 @@ export function formatDateTime(iso: string): string {
 }
 
 export function percent(share: number): string {
-  return `${Math.round(share * 100)} %`
+  return `${Math.round(share * 100)} %`
 }
 
 /** Склонение: «1 очко опыта», «3 очка опыта», «10 очков опыта». */

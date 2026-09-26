@@ -1,8 +1,20 @@
 // Поля форм редактора: базовые поля, выбор следующего узла, конструктор условий, эффекты на шкалы.
 
 import { useId, useState, type ReactNode } from 'react'
+import { FilterChip, Icon } from '../components/ui'
+import { QUALITY } from '../labels'
 import { OPERATORS, formatCondition, parseCondition } from './model'
 import type { Effects } from './types'
+
+/** Значок качества варианта (цвет + иконка) — на холсте, в инспекторе и в прогоне. */
+export function QualityMark({ quality }: { quality: keyof typeof QUALITY }) {
+  const info = QUALITY[quality]
+  return (
+    <span className={`fq fq-${quality}`} title={info.title} aria-label={info.title}>
+      <Icon name={info.icon} size={12} />
+    </span>
+  )
+}
 
 export function Field({ label, hint, children }: { label: string; hint?: string; children: (id: string) => ReactNode }) {
   const id = useId()
@@ -82,11 +94,10 @@ export function ChipToggles({ label, options, selected, onChange }: {
         {options.map((option) => {
           const active = selected.includes(option.code)
           return (
-            <button key={option.code} type="button" aria-pressed={active}
-                    className={`chip etoggle${active ? ' on' : ''}`}
-                    onClick={() => onChange(active ? selected.filter((c) => c !== option.code) : [...selected, option.code])}>
-              {active ? '✓ ' : ''}{option.title}
-            </button>
+            <FilterChip key={option.code} selected={active} icon={active ? 'check' : undefined}
+                        onClick={() => onChange(active ? selected.filter((c) => c !== option.code) : [...selected, option.code])}>
+              {option.title}
+            </FilterChip>
           )
         })}
       </div>
@@ -108,8 +119,12 @@ function ConditionRow({ text, vars, onChange, onRemove }: {
     return (
       <div className="econd">
         <input className="mono" value={text} onChange={(e) => onChange(e.target.value)} placeholder="safety < 40" />
-        {parseCondition(text) && <button type="button" className="ebtn-icon" title="Конструктор" onClick={() => setRaw(false)}>⚙</button>}
-        <button type="button" className="ebtn-icon" title="Удалить условие" onClick={onRemove}>✕</button>
+        {parseCondition(text) && (
+          <button type="button" className="ebtn-icon" title="Конструктор" aria-label="Конструктор" onClick={() => setRaw(false)}>
+            <Icon name="settings" size={16} />
+          </button>
+        )}
+        <button type="button" className="ebtn-icon" title="Удалить условие" aria-label="Удалить условие" onClick={onRemove}><Icon name="x" size={16} /></button>
       </div>
     )
   }
@@ -132,8 +147,10 @@ function ConditionRow({ text, vars, onChange, onRemove }: {
         {(isFlag || parts.operand === 'class' ? ['==', '!='] : OPERATORS).map((op) => <option key={op}>{op}</option>)}
       </select>
       <input className="mono" value={parts.value} onChange={(e) => update({ value: e.target.value.replace(/\s/g, '') })} />
-      <button type="button" className="ebtn-icon" title="Ввести текстом" onClick={() => setRaw(true)}>✎</button>
-      <button type="button" className="ebtn-icon" title="Удалить условие" onClick={onRemove}>✕</button>
+      <button type="button" className="ebtn-icon" title="Ввести текстом" aria-label="Ввести текстом" onClick={() => setRaw(true)}>
+        <Icon name="pencil" size={16} />
+      </button>
+      <button type="button" className="ebtn-icon" title="Удалить условие" aria-label="Удалить условие" onClick={onRemove}><Icon name="x" size={16} /></button>
     </div>
   )
 }
@@ -191,11 +208,11 @@ export function EffectsEditor({ effects, vars, onChange }: {
               <option value="true">true</option>
               <option value="false">false</option>
             </select>
-            <button type="button" className="ebtn-icon" title="Удалить флаг" onClick={() => {
+            <button type="button" className="ebtn-icon" title="Удалить флаг" aria-label="Удалить флаг" onClick={() => {
               const flags = { ...effects.flags }
               delete flags[name]
               onChange({ ...effects, flags })
-            }}>✕</button>
+            }}><Icon name="x" size={16} /></button>
           </div>
         ))}
         <div className="econd">

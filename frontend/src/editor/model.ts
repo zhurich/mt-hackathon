@@ -321,7 +321,7 @@ export const formatCondition = ({ operand, op, value }: ConditionParts): string 
 
 // ---------- Сводка для холста ----------
 
-/** Узлы, на которые ведут прерывания (показываются значком ⚡). */
+/** Узлы, на которые ведут прерывания (показываются значком «молния»). */
 export function interruptTargets(doc: ScenarioDoc): Set<string> {
   return new Set(doc.interrupts.map((i) => i.next))
 }

@@ -3,8 +3,9 @@
 
 import { useCallback, useEffect, useState } from 'react'
 import { api } from '../api/client'
-import { ErrorBox, OutcomeChip, ScaleBar } from '../components/ui'
-import { QUALITY, SPEAKER, signed } from '../labels'
+import { Alert, Button, Card, ChoiceButton, ErrorBox, IconButton, OutcomeChip, ScaleBar, SpeechBubble } from '../components/ui'
+import { QUALITY, SPEAKER, SPEAKER_ICON, signed } from '../labels'
+import { QualityMark } from './fields'
 import { toContent } from './model'
 import type { Outcome, Quality, ScenarioDoc } from './types'
 
@@ -81,68 +82,70 @@ export default function PreviewPanel({ doc, onClose, onFocusNode }: Props) {
   return (
     <aside className="epreview" aria-label="Тестовый прогон">
       <div className="spread">
-        <strong>▶ Тестовый прогон</strong>
-        <div className="row">
-          <button type="button" className="btn" onClick={restart} disabled={busy}>↻ Сначала</button>
-          <button type="button" className="btn" onClick={onClose}>✕</button>
+        <strong>Тестовый прогон</strong>
+        <div className="row" style={{ gap: 4 }}>
+          <Button variant="secondary" size="sm" icon="rotate-ccw" onClick={restart} disabled={busy}>Сначала</Button>
+          <IconButton icon="x" size="sm" label="Закрыть прогон" onClick={onClose} />
         </div>
       </div>
       <p className="ehint">Режим автора: видны качество вариантов и обратная связь. Таймер сам не истекает — нажмите «Время вышло».</p>
       {error !== null && <ErrorBox error={error} />}
 
       {step && (
-        <div className="stack" style={{ gap: '0.6rem' }}>
-          <div className="card stack" style={{ gap: 6, padding: '0.7rem' }}>
-            <ScaleBar label="Лояльность" value={step.loyalty} delta={step.last?.delta.loyalty} color="var(--series-1)" />
-            <ScaleBar label="Безопасность" value={step.safety} delta={step.last?.delta.safety} color="var(--series-2)" />
+        <div className="stack" style={{ gap: 10 }}>
+          <Card padding="sm" bordered>
+            <ScaleBar label="Лояльность" value={step.loyalty} delta={step.last?.delta.loyalty} />
+            <ScaleBar label="Безопасность" kind="safety" value={step.safety} delta={step.last?.delta.safety} />
             {hud.map(([name, label]) => (
               <div key={name} className="spread small"><span className="secondary">{label}</span><strong>{step.vars[name]}</strong></div>
             ))}
             {Object.keys(step.flags).length > 0 && (
               <div className="small muted mono">флаги: {Object.entries(step.flags).map(([k, v]) => `${k}=${v}`).join(', ')}</div>
             )}
-          </div>
+          </Card>
 
           {step.last && (
-            <div className={`alert small alert-${step.last.timed_out || step.last.quality === 'bad' ? 'critical' : step.last.quality === 'poor' ? 'warning' : 'positive'}`}>
-              <div><strong>{step.last.timed_out ? '⏱ Время вышло' : `${QUALITY[step.last.quality!].icon} ${QUALITY[step.last.quality!].title}`}</strong>
-                {' · '}лояльность {signed(step.last.delta.loyalty)}, безопасность {signed(step.last.delta.safety)}</div>
-              <div className="secondary">{step.last.feedback || <em>Обратная связь не заполнена</em>}</div>
-              {step.last.interrupted_to && <div>⚡ Сработало прерывание → {step.last.interrupted_to}</div>}
-            </div>
+            <Alert tone={step.last.timed_out || step.last.quality === 'bad' ? 'critical' : step.last.quality === 'poor' ? 'warning' : 'positive'}
+                   icon={QUALITY[step.last.timed_out ? 'timeout' : step.last.quality!].icon}
+                   title={`${QUALITY[step.last.timed_out ? 'timeout' : step.last.quality!].title} · лояльность ${signed(step.last.delta.loyalty)}, безопасность ${signed(step.last.delta.safety)}`}>
+              {step.last.feedback || <em>Обратная связь не заполнена</em>}
+              {step.last.interrupted_to && <div>Сработало прерывание → {step.last.interrupted_to}</div>}
+            </Alert>
           )}
 
           {step.type === 'choice' && (
             <>
-              <div className="bubble">
-                <div className="bubble-speaker">{step.speaker_name ?? SPEAKER[step.speaker ?? 'narrator']} · <span className="mono">{step.node_id}</span>{step.timer ? ` · ⏱ ${step.timer} с` : ''}</div>
-                <div>{step.text || <em className="muted">Текст не задан</em>}</div>
-              </div>
+              <SpeechBubble kind={step.speaker === 'narrator' ? 'narrator' : 'person'} icon={SPEAKER_ICON[step.speaker ?? 'narrator']}
+                            speaker={<>{step.speaker_name ?? SPEAKER[step.speaker ?? 'narrator']} · <span className="mono">{step.node_id}</span>
+                              {step.timer ? ` · таймер ${step.timer} с` : ''}</>}>
+                {step.text || <em className="muted">Текст не задан</em>}
+              </SpeechBubble>
               {step.choices!.map((choice) => (
-                <button key={choice.id} type="button" className="choice" disabled={busy || !choice.available}
-                        onClick={() => send({ state: step.state, choice_id: choice.id })}
-                        title={choice.available ? `→ ${choice.next || 'не связано'}` : `Недоступен: ${choice.conditions.join(' и ')}`}>
-                  <span className={`fq fq-${choice.quality}`}>{QUALITY[choice.quality].icon}</span>{' '}
+                <ChoiceButton key={choice.id} marker={<QualityMark quality={choice.quality} />} disabled={busy || !choice.available}
+                              onClick={() => send({ state: step.state, choice_id: choice.id })}
+                              title={choice.available ? `→ ${choice.next || 'не связано'}` : `Недоступен: ${choice.conditions.join(' и ')}`}>
                   {choice.text || <em>{choice.id}</em>}
                   <span className="small muted"> → {choice.next || '—'}</span>
                   {!choice.available && <div className="small muted">недоступен: {choice.conditions.join(' и ')}</div>}
-                </button>
+                </ChoiceButton>
               ))}
               {step.timer ? (
-                <button type="button" className="btn" disabled={busy} onClick={() => send({ state: step.state, timeout: true })}>
-                  ⏱ Время вышло
-                </button>
+                <div>
+                  <Button variant="secondary" size="sm" icon="timer" disabled={busy} onClick={() => send({ state: step.state, timeout: true })}>
+                    Время вышло
+                  </Button>
+                </div>
               ) : null}
             </>
           )}
 
           {step.type === 'ending' && step.ending && (
-            <div className="card stack" style={{ gap: 6 }}>
-              <OutcomeChip outcome={step.ending.outcome} />
+            <Card bordered gap={6}>
+              <div><OutcomeChip outcome={step.ending.outcome} /></div>
               <strong>{step.ending.title}</strong>
               <div className="small secondary">{step.ending.text}</div>
               <div className="small muted">Решений: {log.length}, лучших: {log.filter((l) => l.quality === 'best').length}</div>
-            </div>
+            </Card>
           )}
         </div>
       )}

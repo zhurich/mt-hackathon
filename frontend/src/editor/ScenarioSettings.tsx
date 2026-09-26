@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Alert, Button, Icon } from '../components/ui'
 import { ConditionsEditor, NextSelect, NumberInput, Select, TextArea, TextInput } from './fields'
 import type { Dictionaries } from './NodeInspector'
 import type { ScenarioDoc } from './types'
@@ -38,7 +39,9 @@ function VariablesEditor({ doc, onChange }: Pick<Props, 'doc' | 'onChange'>) {
           <span className="mono evar-name">{key}</span>
           <NumberInput label="Начальное" value={value} onChange={(v) => setVar(key, v)} />
           <TextInput label="Подпись для игрока" value={doc.hud[key] ?? ''} placeholder="не показывать" onChange={(label) => setHud(key, label)} />
-          <button type="button" className="ebtn-icon" title="Удалить переменную" onClick={() => remove(key)}>✕</button>
+          <button type="button" className="ebtn-icon" title="Удалить переменную" aria-label="Удалить переменную" onClick={() => remove(key)}>
+            <Icon name="x" size={16} />
+          </button>
         </div>
       ))}
       <div className="econd">
@@ -57,12 +60,11 @@ export default function ScenarioSettings({ doc, dict, globalIssues, onChange }: 
   const set = <K extends keyof ScenarioDoc>(key: K, value: ScenarioDoc[K], group?: string) => onChange({ ...doc, [key]: value }, group)
 
   return (
-    <div className="stack" style={{ gap: '0.75rem' }}>
+    <div className="stack">
       {globalIssues.length > 0 && (
-        <div className="alert alert-critical small">
-          <strong>Проблемы сценария:</strong>
+        <Alert tone="critical" title="Проблемы сценария">
           <ul className="eissues">{globalIssues.map((issue) => <li key={issue}>{issue}</li>)}</ul>
-        </div>
+        </Alert>
       )}
       <div className="egrid-2">
         <TextInput label="ID сценария" value={doc.id} hint="латиница, цифры, дефис"
@@ -92,14 +94,15 @@ export default function ScenarioSettings({ doc, dict, globalIssues, onChange }: 
       <VariablesEditor doc={doc} onChange={onChange} />
 
       <div className="esection">
-        <strong>Прерывания ⚡</strong>
+        <strong className="inline-icon">Прерывания <Icon name="zap" size={16} /></strong>
         <p className="ehint">Проверяются после каждого решения. Когда условие выполнилось, сценарий сразу переходит в указанный узел
           (например, при <code>safety &lt;= 10</code> — в финал «экстренная ситуация»). Каждое срабатывает не больше одного раза.</p>
         {doc.interrupts.map((interrupt, index) => (
           <div key={index} className="echoice open">
             <div className="echoice-head">
               <strong className="small" style={{ flex: 1 }}>Прерывание {index + 1}</strong>
-              <button type="button" className="ebtn-icon" title="Удалить" onClick={() => set('interrupts', doc.interrupts.filter((_, i) => i !== index))}>✕</button>
+              <button type="button" className="ebtn-icon" title="Удалить прерывание" aria-label="Удалить прерывание"
+                      onClick={() => set('interrupts', doc.interrupts.filter((_, i) => i !== index))}><Icon name="x" size={16} /></button>
             </div>
             <div className="echoice-body">
               <ConditionsEditor label="Когда" conditions={interrupt.if} vars={vars} emptyText="Нужно хотя бы одно условие"
@@ -109,9 +112,11 @@ export default function ScenarioSettings({ doc, dict, globalIssues, onChange }: 
             </div>
           </div>
         ))}
-        <button type="button" className="btn" onClick={() => set('interrupts', [...doc.interrupts, { if: ['safety <= 10'], next: '' }])}>
-          + Прерывание
-        </button>
+        <div>
+          <Button variant="secondary" size="sm" icon="plus" onClick={() => set('interrupts', [...doc.interrupts, { if: ['safety <= 10'], next: '' }])}>
+            Прерывание
+          </Button>
+        </div>
       </div>
 
       <div className="esection">

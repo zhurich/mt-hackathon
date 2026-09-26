@@ -1,9 +1,27 @@
-import { Link } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { api } from '../api/client'
 import type { Notification } from '../api/types'
-import { Async } from '../components/ui'
+import { Async, Button, Card, Chip, Icon } from '../components/ui'
 import { NOTIFICATION_ICON, formatDateTime } from '../labels'
+
+function Item({ item }: { item: Notification }) {
+  const body = (
+    <div className="row" style={{ gap: 12, alignItems: 'flex-start', flexWrap: 'nowrap' }}>
+      <span className={`tile-icon${item.read_at ? '' : ' tone-soft'}`}>
+        <Icon name={NOTIFICATION_ICON[item.kind] ?? 'bell'} size={20} />
+      </span>
+      <div className="grow stack" style={{ gap: 2 }}>
+        <div className="spread spread-top">
+          <strong>{item.title}</strong>
+          {!item.read_at && <Chip tone="accent">Новое</Chip>}
+        </div>
+        <div className="small secondary">{item.body}</div>
+        <div className="caption muted">{formatDateTime(item.created_at)}</div>
+      </div>
+    </div>
+  )
+  return item.link ? <Card to={item.link}>{body}</Card> : <Card>{body}</Card>
+}
 
 export default function NotificationsPage() {
   const queryClient = useQueryClient()
@@ -15,45 +33,29 @@ export default function NotificationsPage() {
     mutationFn: () => api.post('/notifications/read', { ids: null }),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['notifications'] }),
   })
+  const unread = query.data?.unread ?? 0
 
   return (
-    <div className="stack">
-      <div className="spread">
-        <h1 style={{ margin: 0 }}>Уведомления</h1>
-        {(query.data?.unread ?? 0) > 0 && (
-          <button className="btn" onClick={() => markAll.mutate()} disabled={markAll.isPending}>Прочитать все</button>
-        )}
-      </div>
+    <>
+      {unread > 0 && (
+        <div className="spread">
+          <span className="small muted">Непрочитанных: {unread}</span>
+          <Button variant="secondary" size="sm" icon="check" loading={markAll.isPending} onClick={() => markAll.mutate()}>
+            Прочитать все
+          </Button>
+        </div>
+      )}
       <Async query={query}>
         {(data) =>
           data.items.length === 0 ? (
-            <p className="muted">Уведомлений пока нет.</p>
+            <Card tone="muted"><span className="small secondary">Уведомлений пока нет.</span></Card>
           ) : (
-            <div className="stack" style={{ gap: '0.5rem' }}>
-              {data.items.map((item) => {
-                const body = (
-                  <div className="row" style={{ alignItems: 'flex-start', flexWrap: 'nowrap' }}>
-                    <span style={{ fontSize: '1.4rem' }} aria-hidden>{NOTIFICATION_ICON[item.kind] ?? '🔔'}</span>
-                    <div style={{ flex: 1 }}>
-                      <div className="spread">
-                        <strong>{item.title}</strong>
-                        {!item.read_at && <span className="chip tone-critical">новое</span>}
-                      </div>
-                      <div className="small secondary">{item.body}</div>
-                      <div className="small muted">{formatDateTime(item.created_at)}</div>
-                    </div>
-                  </div>
-                )
-                return item.link ? (
-                  <Link key={item.id} to={item.link} className="card card-link">{body}</Link>
-                ) : (
-                  <div key={item.id} className="card">{body}</div>
-                )
-              })}
+            <div className="stack" style={{ gap: 8 }}>
+              {data.items.map((item) => <Item key={item.id} item={item} />)}
             </div>
           )
         }
       </Async>
-    </div>
+    </>
   )
 }

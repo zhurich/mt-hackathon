@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react'
+import { Alert, Button, Icon } from '../components/ui'
 import { OUTCOME, QUALITY, SPEAKER } from '../labels'
 import {
-  ChipToggles, ConditionsEditor, EffectsEditor, NextSelect, NumberInput, Select, TextArea, TextInput,
+  ChipToggles, ConditionsEditor, EffectsEditor, NextSelect, NumberInput, QualityMark, Select, TextArea, TextInput,
 } from './fields'
 import { emptyEffects, nextChoiceId } from './model'
 import type {
@@ -30,9 +31,9 @@ interface Props {
 }
 
 const NODE_TYPES: { value: NodeType; label: string }[] = [
-  { value: 'choice', label: '💬 Решение — ситуация и варианты ответа' },
-  { value: 'router', label: '🔀 Условие — невидимый переход по шкалам/флагам' },
-  { value: 'ending', label: '🏁 Финал' },
+  { value: 'choice', label: 'Решение — ситуация и варианты ответа' },
+  { value: 'router', label: 'Условие — невидимый переход по шкалам/флагам' },
+  { value: 'ending', label: 'Финал' },
 ]
 
 function RenameField({ nodeId, onRename }: { nodeId: string; onRename: (id: string) => string | null }) {
@@ -55,26 +56,31 @@ function ChoiceEditor({ choice, index, total, doc, dict, vars, onChange, onMove,
   onChange: (choice: ChoiceDoc, group?: string) => void; onMove: (delta: number) => void; onRemove: () => void
 }) {
   const [open, setOpen] = useState(index === 0)
-  const quality = QUALITY[choice.quality]
   const key = `choice.${index}`
   return (
     <div className={`echoice${open ? ' open' : ''}`}>
       <div className="echoice-head">
         <button type="button" className="echoice-toggle" onClick={() => setOpen(!open)} aria-expanded={open}>
-          <span className={`fq fq-${choice.quality}`}>{quality.icon}</span>
+          <QualityMark quality={choice.quality} />
           <span className="echoice-title">{choice.text || `Вариант ${choice.id}`}</span>
-          <span className="muted small">{open ? '▴' : '▾'}</span>
+          <Icon name={open ? 'chevron-up' : 'chevron-down'} size={16} className="chevron" />
         </button>
-        <button type="button" className="ebtn-icon" title="Выше" disabled={index === 0} onClick={() => onMove(-1)}>↑</button>
-        <button type="button" className="ebtn-icon" title="Ниже" disabled={index === total - 1} onClick={() => onMove(1)}>↓</button>
-        <button type="button" className="ebtn-icon" title="Удалить вариант" disabled={total <= 2} onClick={onRemove}>✕</button>
+        <button type="button" className="ebtn-icon" title="Выше" aria-label="Выше" disabled={index === 0} onClick={() => onMove(-1)}>
+          <Icon name="arrow-up" size={16} />
+        </button>
+        <button type="button" className="ebtn-icon" title="Ниже" aria-label="Ниже" disabled={index === total - 1} onClick={() => onMove(1)}>
+          <Icon name="arrow-down" size={16} />
+        </button>
+        <button type="button" className="ebtn-icon" title="Удалить вариант" aria-label="Удалить вариант" disabled={total <= 2} onClick={onRemove}>
+          <Icon name="x" size={16} />
+        </button>
       </div>
       {open && (
         <div className="echoice-body">
           <div className="egrid-2">
             <TextInput label="ID варианта" value={choice.id} onChange={(id) => onChange({ ...choice, id: id.replace(/\s/g, '') }, `${key}.id`)} />
             <Select label="Качество решения" value={choice.quality}
-                    options={(['best', 'good', 'poor', 'bad'] as const).map((q) => ({ value: q, label: `${QUALITY[q].icon} ${QUALITY[q].title}` }))}
+                    options={(['best', 'good', 'poor', 'bad'] as const).map((q) => ({ value: q, label: QUALITY[q].title }))}
                     onChange={(q) => onChange({ ...choice, quality: q as ChoiceDoc['quality'] })} />
           </div>
           <TextArea label="Действие или реплика проводника" rows={3} value={choice.text}
@@ -116,7 +122,7 @@ function ChoiceForm({ node, doc, dict, onChange }: { node: ChoiceNodeDoc; doc: S
                  onChange={(e) => onChange(e.target.checked
                    ? { ...node, timer: 20, on_timeout: { feedback: '', next: '', effects: { ...emptyEffects(), safety: -10 } } }
                    : { ...node, timer: null, on_timeout: null })} />
-          ⏱ Таймер на решение
+          <Icon name="timer" size={16} /> Таймер на решение
         </label>
         {node.timer !== null && node.on_timeout && (
           <div className="esub">
@@ -135,9 +141,9 @@ function ChoiceForm({ node, doc, dict, onChange }: { node: ChoiceNodeDoc; doc: S
       <div className="esection">
         <div className="spread">
           <strong>Варианты ответа ({node.choices.length})</strong>
-          <button type="button" className="btn" onClick={() => setChoices([...node.choices, {
+          <Button variant="secondary" size="sm" icon="plus" onClick={() => setChoices([...node.choices, {
             id: nextChoiceId(node), text: '', quality: 'good', feedback: '', next: '', effects: emptyEffects(), role_model: [], if: [],
-          }])}>+ Вариант</button>
+          }])}>Вариант</Button>
         </div>
         <div className="ehint">Игроку варианты показываются в случайном порядке.</div>
         {node.choices.map((choice, index) => (
@@ -168,8 +174,8 @@ function RouterForm({ node, doc, onChange }: { node: RouterNodeDoc; doc: Scenari
           <div key={index} className="echoice open">
             <div className="echoice-head">
               <strong className="small" style={{ flex: 1 }}>{isLast ? 'Иначе' : `Маршрут ${index + 1}`}</strong>
-              <button type="button" className="ebtn-icon" title="Удалить маршрут" disabled={node.routes.length <= 1}
-                      onClick={() => setRoutes(node.routes.filter((_, i) => i !== index))}>✕</button>
+              <button type="button" className="ebtn-icon" title="Удалить маршрут" aria-label="Удалить маршрут" disabled={node.routes.length <= 1}
+                      onClick={() => setRoutes(node.routes.filter((_, i) => i !== index))}><Icon name="x" size={16} /></button>
             </div>
             <div className="echoice-body">
               {!isLast && (
@@ -182,9 +188,11 @@ function RouterForm({ node, doc, onChange }: { node: RouterNodeDoc; doc: Scenari
           </div>
         )
       })}
-      <button type="button" className="btn" onClick={() => setRoutes([
-        ...node.routes.slice(0, -1), { next: '', if: ['safety < 50'] }, node.routes[node.routes.length - 1],
-      ])}>+ Маршрут перед «иначе»</button>
+      <div>
+        <Button variant="secondary" size="sm" icon="plus" onClick={() => setRoutes([
+          ...node.routes.slice(0, -1), { next: '', if: ['safety < 50'] }, node.routes[node.routes.length - 1],
+        ])}>Маршрут перед «иначе»</Button>
+      </div>
     </div>
   )
 }
@@ -193,7 +201,7 @@ function EndingForm({ node, onChange }: { node: EndingNodeDoc; onChange: Props['
   return (
     <>
       <Select label="Исход" value={node.outcome}
-              options={(['success', 'partial', 'fail'] as const).map((o) => ({ value: o, label: `${OUTCOME[o].icon} ${OUTCOME[o].title}` }))}
+              options={(['success', 'partial', 'fail'] as const).map((o) => ({ value: o, label: OUTCOME[o].title }))}
               onChange={(outcome) => onChange({ ...node, outcome: outcome as EndingNodeDoc['outcome'] })} />
       <TextInput label="Заголовок" value={node.title} onChange={(title) => onChange({ ...node, title }, 'title')} />
       <TextArea label="Текст финала" rows={4} value={node.text} onChange={(text) => onChange({ ...node, text }, 'text')} />
@@ -205,22 +213,21 @@ export default function NodeInspector(props: Props) {
   const { doc, nodeId, dict, issues } = props
   const node = doc.nodes[nodeId]
   return (
-    <div className="stack" style={{ gap: '0.75rem' }}>
+    <div className="stack">
       {issues.length > 0 && (
-        <div className="alert alert-critical small">
-          <strong>Проблемы узла:</strong>
+        <Alert tone="critical" title="Проблемы узла">
           <ul className="eissues">{issues.map((issue) => <li key={issue}>{issue}</li>)}</ul>
-        </div>
+        </Alert>
       )}
       <RenameField nodeId={nodeId} onRename={props.onRename} />
       <Select label="Тип узла" value={node.type} options={NODE_TYPES} onChange={(type) => props.onChangeType(type as NodeType)}
               hint="Смена типа очищает содержимое узла" />
       <div className="row">
-        <button type="button" className="btn" disabled={doc.start === nodeId} onClick={props.onSetStart}>
-          {doc.start === nodeId ? '▶ Стартовый узел' : '▶ Сделать стартовым'}
-        </button>
-        <button type="button" className="btn" onClick={props.onDuplicate}>⧉ Копия</button>
-        <button type="button" className="btn edanger" onClick={props.onDelete}>Удалить</button>
+        <Button variant="secondary" size="sm" icon="play" disabled={doc.start === nodeId} onClick={props.onSetStart}>
+          {doc.start === nodeId ? 'Стартовый узел' : 'Сделать стартовым'}
+        </Button>
+        <Button variant="secondary" size="sm" icon="copy" onClick={props.onDuplicate}>Копия</Button>
+        <Button variant="secondary" size="sm" icon="x" className="edanger" onClick={props.onDelete}>Удалить</Button>
       </div>
       {node.type === 'choice' && <ChoiceForm node={node} doc={doc} dict={dict} onChange={props.onChange} />}
       {node.type === 'router' && <RouterForm node={node} doc={doc} onChange={props.onChange} />}

@@ -1,9 +1,10 @@
 import { Suspense, lazy, type ReactNode } from 'react'
-import { Navigate, NavLink, Route, Routes, useLocation } from 'react-router-dom'
+import { Navigate, NavLink, Route, Routes, useLocation, useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { api } from './api/client'
 import type { Notification } from './api/types'
 import { useAuth } from './auth'
+import { Icon, IconButton, Loader, TopBar, type IconName } from './components/ui'
 import LoginPage from './pages/LoginPage'
 import HomePage from './pages/HomePage'
 import ScenariosPage from './pages/ScenariosPage'
@@ -19,15 +20,30 @@ import TrainerPage from './pages/TrainerPage'
 // Редактор (с React Flow) нужен только тренерам — грузится отдельным чанком по требованию.
 const EditorPage = lazy(() => import('./editor/EditorPage'))
 
-const NAV = [
-  { to: '/', label: 'Главная', icon: '🏠' },
-  { to: '/scenarios', label: 'Сценарии', icon: '🚄' },
-  { to: '/progress', label: 'Развитие', icon: '📈' },
-  { to: '/leaderboard', label: 'Рейтинг', icon: '🏆' },
-  { to: '/profile', label: 'Профиль', icon: '👤' },
+interface NavItem {
+  to: string
+  label: string
+  icon: IconName
+}
+
+const NAV: NavItem[] = [
+  { to: '/', label: 'Главная', icon: 'house' },
+  { to: '/scenarios', label: 'Сценарии', icon: 'train-front' },
+  { to: '/progress', label: 'Развитие', icon: 'trending-up' },
+  { to: '/leaderboard', label: 'Рейтинг', icon: 'trophy' },
+  { to: '/profile', label: 'Профиль', icon: 'user-round' },
+]
+const TRAINER_NAV: NavItem = { to: '/trainer', label: 'Команда', icon: 'users' }
+
+/** Вложенные экраны: заголовок в верхней панели и куда вести «назад», если истории нет. */
+const NESTED: { prefix: string; title: string; parent: string }[] = [
+  { prefix: '/scenarios/', title: 'Сценарий', parent: '/scenarios' },
+  { prefix: '/attempts/', title: 'Разбор решений', parent: '/profile' },
+  { prefix: '/notifications', title: 'Уведомления', parent: '/' },
 ]
 
 function NotificationBell() {
+  const { pathname } = useLocation()
   const { data } = useQuery({
     queryKey: ['notifications'],
     queryFn: () => api.get<{ unread: number; items: Notification[] }>('/notifications'),
@@ -35,41 +51,49 @@ function NotificationBell() {
   })
   const unread = data?.unread ?? 0
   return (
-    <NavLink to="/notifications" className="bell" aria-label={`Уведомления, непрочитанных: ${unread}`}>
-      🔔{unread > 0 && <span className="bell-count">{unread > 9 ? '9+' : unread}</span>}
-    </NavLink>
+    <IconButton icon="bell" to="/notifications" badge={unread} label={`Уведомления, непрочитанных: ${unread}`}
+                className={pathname === '/notifications' ? 'active' : undefined} />
   )
 }
 
 function Layout({ children }: { children: ReactNode }) {
   const { user } = useAuth()
-  const { pathname } = useLocation()
+  const { pathname, key } = useLocation()
+  const navigate = useNavigate()
+  const items = user?.role === 'trainer' ? [...NAV, TRAINER_NAV] : NAV
+  // Прохождение сценария и редактор — без навигации, чтобы ничего не отвлекало.
   const immersive = pathname.startsWith('/play/')
   const wide = pathname.startsWith('/trainer/editor')
-  const items = user?.role === 'trainer' ? [...NAV, { to: '/trainer', label: 'Команда', icon: '👥' }] : NAV
+
+  if (wide) return <div className="shell"><main className="content-wide">{children}</main></div>
+
+  const nested = NESTED.find((item) => pathname.startsWith(item.prefix))
+  const root = items.find((item) => item.to === pathname)
+  const topnav = (
+    <nav className="topnav" aria-label="Основная навигация">
+      {items.map((item) => (
+        <NavLink key={item.to} to={item.to} end={item.to === '/'}>{item.label}</NavLink>
+      ))}
+    </nav>
+  )
 
   return (
     <div className="shell">
-      <header className="topbar">
-        <NavLink to="/" className="brand">
-          <span aria-hidden>🚄</span> ВСМ Тренажёр
-        </NavLink>
-        <nav className="topnav" aria-label="Основная навигация">
-          {items.map((item) => (
-            <NavLink key={item.to} to={item.to} end={item.to === '/'}>
-              {item.label}
-            </NavLink>
-          ))}
-        </nav>
-        <NotificationBell />
-      </header>
-      <main className={wide ? 'content-wide' : 'content'}>{children}</main>
-      {!immersive && !wide && (
+      {!immersive && (
+        nested ? (
+          <TopBar title={nested.title} onBack={() => (key !== 'default' ? navigate(-1) : navigate(nested.parent))}
+                  nav={topnav} actions={<NotificationBell />} />
+        ) : (
+          <TopBar brand={pathname === '/' || !root ? true : 'desktop'} title={root?.label} nav={topnav} actions={<NotificationBell />} />
+        )
+      )}
+      <main className={immersive ? 'content content-immersive' : 'content'}>{children}</main>
+      {!immersive && (
         <nav className="bottomnav" aria-label="Основная навигация">
           {items.map((item) => (
             <NavLink key={item.to} to={item.to} end={item.to === '/'}>
-              <span aria-hidden>{item.icon}</span>
-              {item.label}
+              <Icon name={item.icon} size={24} />
+              <span className="bottomnav-label">{item.label}</span>
             </NavLink>
           ))}
         </nav>
@@ -85,7 +109,7 @@ function RequireTrainer({ children }: { children: ReactNode }) {
 
 export default function App() {
   const { user, loading } = useAuth()
-  if (loading) return <div className="center-screen">Загрузка…</div>
+  if (loading) return <div className="center-screen"><Loader /></div>
   if (!user) return <LoginPage />
 
   return (
@@ -102,7 +126,7 @@ export default function App() {
         <Route path="/notifications" element={<NotificationsPage />} />
         <Route path="/trainer" element={<RequireTrainer><TrainerPage /></RequireTrainer>} />
         <Route path="/trainer/editor/:id" element={
-          <RequireTrainer><Suspense fallback={<div className="center-screen">Загрузка редактора…</div>}><EditorPage /></Suspense></RequireTrainer>
+          <RequireTrainer><Suspense fallback={<div className="center-screen"><Loader label="Загрузка редактора" /></div>}><EditorPage /></Suspense></RequireTrainer>
         } />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>

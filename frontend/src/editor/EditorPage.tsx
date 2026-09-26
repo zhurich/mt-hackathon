@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { Link, useNavigate, useParams } from 'react-router-dom'
+import { useNavigate, useParams } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { ReactFlowProvider } from '@xyflow/react'
 import { ApiError, api } from '../api/client'
 import type { ScenarioSummary } from '../api/types'
-import { ErrorBox, Loader } from '../components/ui'
+import { Alert, Button, ErrorBox, IconButton, Loader } from '../components/ui'
+import { QualityMark } from './fields'
 import GraphCanvas from './GraphCanvas'
 import NodeInspector, { type Dictionaries } from './NodeInspector'
 import PreviewPanel from './PreviewPanel'
@@ -216,42 +217,48 @@ function Editor({ draftKey, initial, dict }: { draftKey: string; initial: Scenar
   return (
     <div className="editor">
       <div className="etoolbar">
-        <Link to="/trainer" className="btn" title="К панели тренера">←</Link>
+        <IconButton icon="arrow-left" to="/trainer" label="К панели наставника" />
         <div className="etitle">
           <strong>{doc.title || 'Без названия'}</strong>
           <span className="small muted mono">{doc.id} · v{doc.version}</span>
         </div>
         <div className="row etools">
-          <button type="button" className="btn" onClick={() => add('choice')} title="Узел с ситуацией и вариантами ответа">+ 💬 Решение</button>
-          <button type="button" className="btn" onClick={() => add('router')} title="Невидимый переход по условиям">+ 🔀 Условие</button>
-          <button type="button" className="btn" onClick={() => add('ending')}>+ 🏁 Финал</button>
+          <Button variant="secondary" size="sm" icon="message-square" onClick={() => add('choice')} title="Узел с ситуацией и вариантами ответа">Решение</Button>
+          <Button variant="secondary" size="sm" icon="split" onClick={() => add('router')} title="Невидимый переход по условиям">Условие</Button>
+          <Button variant="secondary" size="sm" icon="flag" onClick={() => add('ending')} title="Финал сценария">Финал</Button>
           <span className="esep" />
-          <button type="button" className="btn" onClick={history.undo} disabled={!history.canUndo} title="Отменить (Ctrl+Z)">↶</button>
-          <button type="button" className="btn" onClick={history.redo} disabled={!history.canRedo} title="Повторить (Ctrl+Shift+Z)">↷</button>
-          <button type="button" className="btn" onClick={() => commit({ ...doc, layout: autoLayout(doc) })} title="Расставить узлы по шагам от старта">⇶ Раскладка</button>
+          <IconButton icon="undo-2" size="sm" label="Отменить (Ctrl+Z)" onClick={history.undo} disabled={!history.canUndo} />
+          <IconButton icon="redo-2" size="sm" label="Повторить (Ctrl+Shift+Z)" onClick={history.redo} disabled={!history.canRedo} />
+          <Button variant="secondary" size="sm" icon="workflow" onClick={() => commit({ ...doc, layout: autoLayout(doc) })}
+                  title="Расставить узлы по шагам от старта">Раскладка</Button>
           <span className="esep" />
-          <button type="button" className="btn" onClick={() => setImportOpen(true)}>Импорт</button>
-          <button type="button" className="btn" onClick={exportYaml}>YAML ↓</button>
-          <button type="button" className={`btn estatus ${issueCount ? 'bad' : issues ? 'ok' : ''}`} onClick={() => setTab('issues')}>
-            {issues === null ? '… проверка' : issueCount ? `✕ Проблем: ${issueCount}` : '✓ Ошибок нет'}
-          </button>
-          <button type="button" className="btn" onClick={() => setPreviewOpen(true)} disabled={issueCount > 0}
-                  title={issueCount ? 'Прогон доступен после исправления проблем' : 'Пройти черновик как игрок'}>▶ Прогон</button>
-          <button type="button" className="btn btn-primary" onClick={publish}>Опубликовать</button>
+          <Button variant="secondary" size="sm" icon="upload" onClick={() => setImportOpen(true)}>Импорт</Button>
+          <Button variant="secondary" size="sm" icon="download" onClick={exportYaml}>YAML</Button>
+          <Button variant="secondary" size="sm" className={`estatus ${issueCount ? 'bad' : issues ? 'ok' : ''}`}
+                  icon={issues === null ? undefined : issueCount ? 'circle-alert' : 'circle-check'} onClick={() => setTab('issues')}>
+            {issues === null ? 'Проверка' : issueCount ? `Проблем: ${issueCount}` : 'Ошибок нет'}
+          </Button>
+          <Button variant="secondary" size="sm" icon="circle-play" onClick={() => setPreviewOpen(true)} disabled={issueCount > 0}
+                  title={issueCount ? 'Прогон доступен после исправления проблем' : 'Пройти черновик как игрок'}>Прогон</Button>
+          <Button size="sm" onClick={publish}>Опубликовать</Button>
         </div>
       </div>
 
       {savedDraft && (
-        <div className="alert alert-warning ebanner">
-          Есть несохранённый черновик этого сценария из прошлого сеанса.
-          <button type="button" className="btn" onClick={() => { history.reset(savedDraft); setSavedDraft(null) }}>Восстановить</button>
-          <button type="button" className="btn" onClick={() => { writeDraft(draftKey, null); setSavedDraft(null) }}>Отбросить</button>
+        <div className="ebanner">
+          <Alert tone="warning" action={<>
+            <Button variant="secondary" size="sm" onClick={() => { history.reset(savedDraft); setSavedDraft(null) }}>Восстановить</Button>
+            <Button variant="secondary" size="sm" onClick={() => { writeDraft(draftKey, null); setSavedDraft(null) }}>Отбросить</Button>
+          </>}>
+            Есть несохранённый черновик этого сценария из прошлого сеанса.
+          </Alert>
         </div>
       )}
       {message && (
-        <div className={`alert alert-${message.tone} ebanner`}>
-          {message.text}
-          <button type="button" className="ebtn-icon" onClick={() => setMessage(null)}>✕</button>
+        <div className="ebanner">
+          <Alert tone={message.tone} action={<Button variant="secondary" size="sm" onClick={() => setMessage(null)}>Закрыть</Button>}>
+            {message.text}
+          </Alert>
         </div>
       )}
 
@@ -261,11 +268,11 @@ function Editor({ draftKey, initial, dict }: { draftKey: string; initial: Scenar
                        onConnect={onConnect} onDisconnect={onDisconnect} onCreateFrom={onCreateFrom}
                        onMove={onMove} onDelete={onDelete} focus={focus} />
           <div className="elegend small">
-            <span><span className="fq fq-best">★</span> лучший</span>
-            <span><span className="fq fq-good">✓</span> хороший</span>
-            <span><span className="fq fq-poor">!</span> слабый</span>
-            <span><span className="fq fq-bad">✕</span> ошибка</span>
-            <span>┅ таймаут</span>
+            <span className="inline-icon"><QualityMark quality="best" /> лучший</span>
+            <span className="inline-icon"><QualityMark quality="good" /> хороший</span>
+            <span className="inline-icon"><QualityMark quality="poor" /> слабый</span>
+            <span className="inline-icon"><QualityMark quality="bad" /> ошибка</span>
+            <span className="inline-icon"><QualityMark quality="timeout" /> таймаут</span>
             <span className="muted">Тяните от точки справа к узлу или на пустое место — появится новый узел</span>
           </div>
         </div>
@@ -324,11 +331,11 @@ function Editor({ draftKey, initial, dict }: { draftKey: string; initial: Scenar
                   <div className="stack" style={{ gap: '0.5rem' }}>
                     {validationError !== null && <ErrorBox error={validationError} />}
                     {issues === null && <Loader />}
-                    {issues?.length === 0 && <div className="alert alert-positive">✓ Сценарий корректен и готов к публикации.</div>}
+                    {issues?.length === 0 && <Alert tone="positive">Сценарий корректен и готов к публикации.</Alert>}
                     {issues?.map((issue, index) => (
                       <button key={index} type="button" className="eissue" disabled={!issue.node_id || !(issue.node_id in doc.nodes)}
                               onClick={() => { if (issue.node_id) { select(issue.node_id); focusOn(issue.node_id) } }}>
-                        {issue.node_id && <span className="mono chip">{issue.node_id}</span>} {issue.message}
+                        {issue.node_id && <span className="chip mono">{issue.node_id}</span>} {issue.message}
                       </button>
                     ))}
                   </div>
@@ -366,12 +373,12 @@ function ImportDialog({ onClose, onImport }: { onClose: () => void; onImport: (d
     <div className="emodal" role="dialog" aria-modal="true" aria-label="Импорт сценария">
       <div className="card stack emodal-body">
         <strong>Импорт сценария (YAML или JSON)</strong>
-        <p className="small secondary">Текущий черновик будет заменён. Импорт можно отменить кнопкой ↶ (Ctrl+Z).</p>
+        <p className="small secondary">Текущий черновик будет заменён. Импорт можно отменить кнопкой «Отменить» (Ctrl+Z).</p>
         <textarea rows={16} value={text} onChange={(e) => setText(e.target.value)} placeholder="id: my-scenario&#10;version: 1&#10;…" />
         {error !== null && <ErrorBox error={error} />}
         <div className="row">
-          <button type="button" className="btn btn-primary" disabled={!text.trim()} onClick={submit}>Загрузить в редактор</button>
-          <button type="button" className="btn" onClick={onClose}>Отмена</button>
+          <Button disabled={!text.trim()} onClick={submit}>Загрузить в редактор</Button>
+          <Button variant="secondary" onClick={onClose}>Отмена</Button>
         </div>
       </div>
     </div>

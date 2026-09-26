@@ -1,17 +1,16 @@
 import { useState } from 'react'
-import { Link } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { api } from '../api/client'
 import type { Analytics, ScenarioSummary, TeamAnalytics, User } from '../api/types'
-import { Async } from '../components/ui'
+import { Async, Button, Card, Chip, Tabs } from '../components/ui'
 import { percent } from '../labels'
 import { AnalyticsView } from './ProgressPage'
 
 const TABS = [
-  { id: 'team', title: 'Бригады' },
-  { id: 'employees', title: 'Сотрудники' },
-  { id: 'hardest', title: 'Сложные решения' },
-  { id: 'scenarios', title: 'Сценарии' },
+  { id: 'team', label: 'Бригады' },
+  { id: 'employees', label: 'Сотрудники' },
+  { id: 'hardest', label: 'Сложные решения' },
+  { id: 'scenarios', label: 'Сценарии' },
 ] as const
 type Tab = (typeof TABS)[number]['id']
 
@@ -31,8 +30,8 @@ function TeamTab({ data }: { data: TeamAnalytics }) {
     ...data.brigades.map((b) => ({ key: String(b.id), name: b.name, sub: `${b.depot} · ${b.members} чел.`, values: b.competencies })),
   ]
   return (
-    <section className="card">
-      <h2>Среднее мастерство по компетенциям, %</h2>
+    <Card as="section">
+      <h2 className="h3">Среднее мастерство по компетенциям, %</h2>
       <div className="table-wrap">
         <table className="heat">
           <thead>
@@ -41,7 +40,7 @@ function TeamTab({ data }: { data: TeamAnalytics }) {
           <tbody>
             {rows.map((row) => (
               <tr key={row.key}>
-                <td><strong>{row.name}</strong><div className="small muted">{row.sub}</div></td>
+                <td><strong>{row.name}</strong>{row.sub && <div className="caption muted">{row.sub}</div>}</td>
                 {codes.map((code) => (
                   <td key={code} className="cell" style={heatStyle(row.values[code])}
                       title={`${row.name} — ${data.competency_titles[code]}: ${row.values[code] ?? 'нет данных'}`}>
@@ -53,8 +52,10 @@ function TeamTab({ data }: { data: TeamAnalytics }) {
           </tbody>
         </table>
       </div>
-      <p className="small muted">Светлее — ниже мастерство. Самые светлые ячейки (ниже 50 %) — компетенция «проседает» и требует внимания; самые тёмные (от 75 %) — освоена.</p>
-    </section>
+      <p className="small muted">
+        Светлее — ниже мастерство. Самые светлые ячейки (ниже 50 %) — компетенция «проседает» и требует внимания; самые тёмные (от 75 %) — освоена.
+      </p>
+    </Card>
   )
 }
 
@@ -64,8 +65,8 @@ function EmployeeDrilldown({ userId, onClose }: { userId: number; onClose: () =>
     queryFn: () => api.get<Analytics & { user: User }>(`/analytics/users/${userId}`),
   })
   return (
-    <div className="stack">
-      <button className="btn" onClick={onClose}>← К списку сотрудников</button>
+    <>
+      <div><Button variant="secondary" size="sm" icon="arrow-left" onClick={onClose}>К списку сотрудников</Button></div>
       <Async query={query}>
         {(data) => (
           <>
@@ -74,7 +75,7 @@ function EmployeeDrilldown({ userId, onClose }: { userId: number; onClose: () =>
           </>
         )}
       </Async>
-    </div>
+    </>
   )
 }
 
@@ -82,74 +83,87 @@ function EmployeesTab({ data }: { data: TeamAnalytics }) {
   const [selected, setSelected] = useState<number | null>(null)
   if (selected !== null) return <EmployeeDrilldown userId={selected} onClose={() => setSelected(null)} />
   return (
-    <section className="card table-wrap">
-      <table>
-        <thead>
-          <tr><th>Сотрудник</th><th>Уровень</th><th>Сценариев</th><th>Успех</th><th>Баллы</th><th>Проседает</th></tr>
-        </thead>
-        <tbody>
-          {data.employees.map((row) => (
-            <tr key={row.user_id} onClick={() => setSelected(row.user_id)} style={{ cursor: 'pointer' }}>
-              <td><strong>{row.display_name}</strong><div className="small muted">{row.brigade}</div></td>
-              <td className="small">{row.level_title}</td>
-              <td className="tabular">{row.attempts}</td>
-              <td className="tabular">{percent(row.success_rate)}</td>
-              <td className="tabular">{row.active_points}</td>
-              <td className="small">{row.weakest ? <span className="chip tone-critical">! {row.weakest.title} {row.weakest.mastery}%</span> : '—'}</td>
+    <Card as="section">
+      <div className="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Сотрудник</th><th>Уровень</th><th className="num">Сценариев</th><th className="num">Успех</th>
+              <th className="num">Баллы</th><th>Проседает</th>
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {data.employees.map((row) => (
+              <tr key={row.user_id} className="clickable" tabIndex={0} onClick={() => setSelected(row.user_id)}
+                  onKeyDown={(e) => { if (e.key === 'Enter') setSelected(row.user_id) }}>
+                <td><strong>{row.display_name}</strong><div className="caption muted">{row.brigade}</div></td>
+                <td className="secondary">{row.level_title}</td>
+                <td className="num">{row.attempts}</td>
+                <td className="num">{percent(row.success_rate)}</td>
+                <td className="num">{row.active_points}</td>
+                <td>{row.weakest ? <Chip tone="critical" icon="circle-alert">{row.weakest.title} {row.weakest.mastery}%</Chip> : '—'}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
       <p className="small muted">Нажмите на сотрудника, чтобы открыть его аналитику.</p>
-    </section>
+    </Card>
   )
 }
 
 function HardestTab({ data }: { data: TeamAnalytics }) {
   return (
-    <div className="stack" style={{ gap: '0.6rem' }}>
+    <>
       <p className="small secondary">Решения, в которых сотрудники чаще всего ошибаются или не успевают — кандидаты для разбора на планёрке.</p>
       {data.hardest_decisions.map((item) => (
-        <div key={`${item.scenario_id}-${item.node_id}`} className="card stack" style={{ gap: '0.3rem' }}>
-          <div className="spread">
+        <Card key={`${item.scenario_id}-${item.node_id}`} gap={6}>
+          <div className="spread spread-top">
             <strong>{item.scenario_title}</strong>
-            <span className="chip tone-critical">ошибок {percent(item.error_rate)}</span>
+            <Chip tone="critical" icon="x">Ошибок {percent(item.error_rate)}</Chip>
           </div>
           <div className="small secondary">{item.situation}</div>
           <div className="small muted">Ответов: {item.answers} · из них таймаутов {percent(item.timeout_rate)}</div>
-        </div>
+        </Card>
       ))}
-    </div>
+    </>
   )
 }
 
 function ScenariosTab() {
   const scenarios = useQuery({ queryKey: ['scenarios'], queryFn: () => api.get<ScenarioSummary[]>('/scenarios') })
   return (
-    <div className="stack">
-      <section className="card stack" style={{ gap: '0.5rem' }}>
-        <div className="spread">
-          <h2 style={{ margin: 0 }}>Сценарии</h2>
-          <Link to="/trainer/editor/new" className="btn btn-primary">+ Создать сценарий</Link>
-        </div>
-        <p className="small secondary">
-          Визуальный редактор: граф решений, проверка на лету, тестовый прогон и публикация без перезапуска и правки кода.
-          Сотрудники получат уведомление о новом сценарии.
-        </p>
-        <Async query={scenarios}>
-          {(items) => (
-            <div className="stack" style={{ gap: '0.4rem' }}>
-              {items.map((item) => (
-                <div key={item.id} className="spread small">
-                  <span><strong>{item.title}</strong> <span className="muted">· {item.id} v{item.version} · {item.decisions} решений</span></span>
-                  <Link to={`/trainer/editor/${item.id}`} className="btn">✎ Редактировать</Link>
-                </div>
-              ))}
-            </div>
-          )}
-        </Async>
-      </section>
-    </div>
+    <Card as="section" gap={12}>
+      <div className="spread">
+        <h2 className="h3">Сценарии</h2>
+        <Button size="sm" icon="plus" to="/trainer/editor/new">Создать сценарий</Button>
+      </div>
+      <p className="small secondary">
+        Визуальный редактор: граф решений, проверка на лету, тестовый прогон и публикация без перезапуска и правки кода.
+        Сотрудники получат уведомление о новом сценарии.
+      </p>
+      <Async query={scenarios}>
+        {(items) => (
+          <div className="table-wrap">
+            <table>
+              <tbody>
+                {items.map((item) => (
+                  <tr key={item.id}>
+                    <td>
+                      <strong>{item.title}</strong>
+                      <div className="caption muted"><span className="mono">{item.id}</span> · v{item.version} · {item.decisions} решений</div>
+                    </td>
+                    <td className="num">
+                      <Button variant="secondary" size="sm" icon="pencil" to={`/trainer/editor/${item.id}`}>Редактировать</Button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </Async>
+    </Card>
   )
 }
 
@@ -157,14 +171,8 @@ export default function TrainerPage() {
   const [tab, setTab] = useState<Tab>('team')
   const query = useQuery({ queryKey: ['analytics', 'team'], queryFn: () => api.get<TeamAnalytics>('/analytics/team') })
   return (
-    <div className="stack">
-      <h1>Команда</h1>
-      <div className="tabs" role="tablist">
-        {TABS.map((item) => (
-          <button key={item.id} role="tab" aria-selected={tab === item.id} className={tab === item.id ? 'active' : ''}
-                  onClick={() => setTab(item.id)}>{item.title}</button>
-        ))}
-      </div>
+    <>
+      <Tabs items={TABS} value={tab} onChange={setTab} label="Разделы панели наставника" />
       {tab === 'scenarios' ? (
         <ScenariosTab />
       ) : (
@@ -172,6 +180,6 @@ export default function TrainerPage() {
           {(data) => (tab === 'team' ? <TeamTab data={data} /> : tab === 'employees' ? <EmployeesTab data={data} /> : <HardestTab data={data} />)}
         </Async>
       )}
-    </div>
+    </>
   )
 }

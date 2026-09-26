@@ -1,94 +1,85 @@
-import { Link } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { api } from '../api/client'
 import type { Analytics } from '../api/types'
-import { Async, CompetencyBars, XpBars } from '../components/ui'
+import { Alert, Async, Card, CompetencyBars, Icon, Meter, StatCard, XpBars } from '../components/ui'
 import { percent } from '../labels'
-
-const INSIGHT_ICON = { warning: '⚠', info: 'ℹ', positive: '✓' }
 
 /** Аналитика компетенций. Переиспользуется на странице тренера для просмотра сотрудника. */
 export function AnalyticsView({ data }: { data: Analytics }) {
   const { stats } = data
   return (
-    <div className="stack">
-      <section className="stack" style={{ gap: '0.5rem' }}>
-        <h2>Выводы</h2>
-        {data.insights.map((insight) => (
-          <div key={insight.text} className={`alert alert-${insight.kind}`}>
-            <span aria-hidden>{INSIGHT_ICON[insight.kind]} </span>{insight.text}
-          </div>
-        ))}
-      </section>
+    <>
+      {data.insights.length > 0 && (
+        <section className="stack">
+          <h2 className="section-title">Выводы</h2>
+          {data.insights.map((insight) => <Alert key={insight.text} tone={insight.kind}>{insight.text}</Alert>)}
+        </section>
+      )}
 
       <div className="stats-grid">
-        <div className="card"><div className="muted small">Пройдено</div><div className="big-number">{stats.attempts}</div></div>
-        <div className="card"><div className="muted small">Успешных</div><div className="big-number">{percent(stats.success_rate)}</div></div>
-        <div className="card"><div className="muted small">Таймаутов</div><div className="big-number">{percent(stats.timeout_rate)}</div></div>
-        <div className="card"><div className="muted small">Средняя лояльность</div><div className="big-number">{stats.avg_loyalty ?? '—'}</div></div>
-        <div className="card"><div className="muted small">Средняя безопасность</div><div className="big-number">{stats.avg_safety ?? '—'}</div></div>
-        <div className="card"><div className="muted small">Время реакции</div><div className="big-number">{stats.avg_reaction_ms ? `${(stats.avg_reaction_ms / 1000).toFixed(1)} с` : '—'}</div></div>
+        <StatCard label="Пройдено" value={stats.attempts} />
+        <StatCard label="Успешных" value={percent(stats.success_rate)} />
+        <StatCard label="Таймаутов" value={percent(stats.timeout_rate)} />
+        <StatCard label="Средняя лояльность" value={stats.avg_loyalty ?? '—'} />
+        <StatCard label="Средняя безопасность" value={stats.avg_safety ?? '—'} />
+        <StatCard label="Время реакции" value={stats.avg_reaction_ms ? `${(stats.avg_reaction_ms / 1000).toFixed(1)} с` : '—'} />
       </div>
 
-      <section className="card">
-        <h2>Мастерство по компетенциям</h2>
+      <Card as="section" gap={16}>
+        <h2 className="h3">Мастерство по компетенциям</h2>
         <CompetencyBars items={data.competencies} />
-      </section>
+      </Card>
 
-      <section className="card stack" style={{ gap: '0.6rem' }}>
-        <h2>Ролевая модель: как часто используется шаг</h2>
-        {data.role_model.map((step) => (
-          <div key={step.code} className="hbar">
-            <span className="small">{step.title}</span>
-            <div className="hbar-track" aria-hidden><div className="hbar-fill" style={{ width: `${step.share * 100}%` }} /></div>
-            <span className="small tabular" style={{ textAlign: 'right' }}>{percent(step.share)}</span>
-          </div>
-        ))}
-        <p className="small muted">Доля пройденных сценариев, в которых вы использовали шаг хотя бы раз.</p>
-      </section>
+      <Card as="section" gap={16}>
+        <h2 className="h3">Ролевая модель: как часто используется шаг</h2>
+        <div className="meters">
+          {data.role_model.map((step) => (
+            <Meter key={step.code} title={step.title} value={step.share * 100} display={percent(step.share)} />
+          ))}
+        </div>
+        <p className="small muted">Доля пройденных сценариев, в которых шаг использован хотя бы раз.</p>
+      </Card>
 
       {data.categories.length > 0 && (
-        <section className="card">
-          <h2>По категориям ситуаций</h2>
+        <Card as="section">
+          <h2 className="h3">По категориям ситуаций</h2>
           <div className="table-wrap">
             <table>
-              <thead><tr><th>Категория</th><th>Попыток</th><th>Успех</th></tr></thead>
+              <thead><tr><th>Категория</th><th className="num">Попыток</th><th className="num">Успех</th></tr></thead>
               <tbody>
                 {data.categories.map((row) => (
-                  <tr key={row.category}><td>{row.title}</td><td className="tabular">{row.attempts}</td><td className="tabular">{percent(row.success_rate)}</td></tr>
+                  <tr key={row.category}><td>{row.title}</td><td className="num">{row.attempts}</td><td className="num">{percent(row.success_rate)}</td></tr>
                 ))}
               </tbody>
             </table>
           </div>
-        </section>
+        </Card>
       )}
 
-      <section className="card">
-        <h2>Очки опыта за 30 дней</h2>
+      <Card as="section" gap={12}>
+        <h2 className="h3">Очки опыта за 30 дней</h2>
         <XpBars series={data.xp_by_day} />
-      </section>
+      </Card>
 
       {data.recommendations.length > 0 && (
-        <section className="stack" style={{ gap: '0.5rem' }}>
-          <h2>Что тренировать дальше</h2>
+        <section className="stack">
+          <h2 className="section-title">Что тренировать дальше</h2>
           {data.recommendations.map((item) => (
-            <Link key={item.scenario_id} to={`/scenarios/${item.scenario_id}`} className="card card-link">
-              <strong>{item.title}</strong>
+            <Card key={item.scenario_id} to={`/scenarios/${item.scenario_id}`} gap={4}>
+              <div className="row" style={{ flexWrap: 'nowrap' }}>
+                <strong className="grow">{item.title}</strong>
+                <Icon name="chevron-right" size={20} className="chevron" />
+              </div>
               <div className="small muted">{item.reason}</div>
-            </Link>
+            </Card>
           ))}
         </section>
       )}
-    </div>
+    </>
   )
 }
 
 export default function ProgressPage() {
   const query = useQuery({ queryKey: ['analytics', 'me'], queryFn: () => api.get<Analytics>('/analytics/me') })
-  return (
-    <div className="stack">
-      <h1>Развитие</h1>
-      <Async query={query}>{(data) => <AnalyticsView data={data} />}</Async>
-    </div>
-  )
+  return <Async query={query}>{(data) => <AnalyticsView data={data} />}</Async>
 }

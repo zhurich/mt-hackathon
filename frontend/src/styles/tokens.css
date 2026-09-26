@@ -1,0 +1,162 @@
+/* Токены дизайн-системы «ВСМ · Обучение».
+   Меняются только синхронно с дизайн-системой; компонентные стили — в index.css. */
+
+/* ---------- Цвета ---------- */
+:root {
+  /* Бренд: красный портала mos.ru (theme-color #cc2222) */
+  --red-50: #fbeaea;
+  --red-100: #f5cfcf;
+  --red-500: #cc2222;
+  --red-600: #b31d1d;
+  --red-700: #961818;
+
+  /* Нейтральные — холодный серый */
+  --gray-0: #ffffff;
+  --gray-25: #f7f8fa;
+  --gray-50: #f2f3f5;
+  --gray-100: #e8eaed;
+  --gray-200: #d9dce1;
+  --gray-300: #c2c6cc;
+  --gray-500: #6b717a;
+  --gray-700: #454a52;
+  --gray-900: #1a1c1f;
+
+  /* Серии данных */
+  --blue-50: #e8f1fc;
+  --blue-500: #2a78d6;
+  --blue-700: #1b5aa6;
+  --orange-50: #fdefe8;
+  --orange-500: #eb6834;
+  --orange-700: #b4471b;
+
+  /* Статусы */
+  --green-50: #e6f4ea;
+  --green-500: #1f9d45;
+  --green-700: #166b30;
+  --amber-50: #fff4d9;
+  --amber-500: #fab219;
+  --amber-700: #8a5a00;
+  --crimson-50: #fbe9e7;
+  --crimson-600: #b3261e;
+
+  /* Последовательная шкала (тепловая карта мастерства) */
+  --seq-100: #cde2fb;
+  --seq-300: #6da7ec;
+  --seq-500: #256abf;
+  --seq-700: #0d366b;
+
+  /* ---- Семантика ---- */
+  --bg: var(--gray-50);
+  --surface: var(--gray-0);
+  --surface-2: var(--gray-50);
+  --surface-3: var(--gray-100);
+  --text: var(--gray-900);
+  --text-2: var(--gray-700);
+  --muted: var(--gray-500);
+  --disabled: var(--gray-300);
+  --border: var(--gray-200);
+  --border-soft: var(--gray-100);
+  --grid: var(--gray-100);
+
+  --accent: var(--red-500);
+  --accent-hover: var(--red-600);
+  --accent-press: var(--red-700);
+  --accent-soft: var(--red-50);
+  --accent-ink: #ffffff;
+
+  --series-loyalty: var(--blue-500);
+  --series-safety: var(--orange-500);
+
+  --info: var(--blue-500);
+  --info-soft: var(--blue-50);
+  --info-text: var(--blue-700);
+  --good: var(--green-500);
+  --good-soft: var(--green-50);
+  --good-text: var(--green-700);
+  --warning: var(--amber-500);
+  --warning-soft: var(--amber-50);
+  --warning-text: var(--amber-700);
+  --critical: var(--crimson-600);
+  --critical-soft: var(--crimson-50);
+  --critical-text: var(--crimson-600);
+
+  --focus-ring: 0 0 0 2px var(--surface), 0 0 0 4px var(--gray-900);
+  --scrim: rgba(26, 28, 31, 0.48);
+}
+
+/* ---------- Типографика ---------- */
+:root {
+  --font-sans: 'Golos Text', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --font-mono: ui-monospace, 'SF Mono', Consolas, monospace;
+
+  --fw-regular: 400;
+  --fw-medium: 500;
+  --fw-semibold: 600;
+  --fw-bold: 700;
+
+  --fs-display: 32px;  --lh-display: 38px;
+  --fs-h1: 24px;       --lh-h1: 30px;
+  --fs-h2: 20px;       --lh-h2: 26px;
+  --fs-h3: 17px;       --lh-h3: 22px;
+  --fs-body-lg: 18px;  --lh-body-lg: 26px;
+  --fs-body: 16px;     --lh-body: 24px;
+  --fs-small: 14px;    --lh-small: 20px;
+  --fs-caption: 12px;  --lh-caption: 16px;
+  --fs-number: 28px;   --lh-number: 32px;
+
+  --ls-tight: -0.01em;
+  --ls-caps: 0.04em;
+
+  /* Семантические роли */
+  --text-display: var(--fw-bold) var(--fs-display)/var(--lh-display) var(--font-sans);
+  --text-h1: var(--fw-bold) var(--fs-h1)/var(--lh-h1) var(--font-sans);
+  --text-h2: var(--fw-semibold) var(--fs-h2)/var(--lh-h2) var(--font-sans);
+  --text-h3: var(--fw-semibold) var(--fs-h3)/var(--lh-h3) var(--font-sans);
+  --text-body-lg: var(--fw-regular) var(--fs-body-lg)/var(--lh-body-lg) var(--font-sans);
+  --text-body: var(--fw-regular) var(--fs-body)/var(--lh-body) var(--font-sans);
+  --text-label: var(--fw-medium) var(--fs-small)/var(--lh-small) var(--font-sans);
+  --text-small: var(--fw-regular) var(--fs-small)/var(--lh-small) var(--font-sans);
+  --text-caption: var(--fw-medium) var(--fs-caption)/var(--lh-caption) var(--font-sans);
+  --text-number: var(--fw-bold) var(--fs-number)/var(--lh-number) var(--font-sans);
+}
+
+/* ---------- Отступы, радиусы, тени, движение ---------- */
+:root {
+  --space-0: 0px;
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-12: 48px;
+
+  --radius-xs: 4px;
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+  --radius-pill: 999px;
+
+  --control-sm: 36px;
+  --control-md: 44px;
+  --control-lg: 52px;
+  --hit-min: 44px;
+
+  --shadow-0: none;
+  --shadow-1: 0 1px 2px rgba(26, 28, 31, 0.06);
+  --shadow-2: 0 4px 16px rgba(26, 28, 31, 0.08);
+  --shadow-3: 0 12px 32px rgba(26, 28, 31, 0.14);
+
+  --dur-fast: 120ms;
+  --dur: 200ms;
+  --dur-slow: 400ms;
+  --ease: cubic-bezier(0.2, 0, 0, 1);
+
+  --page-gutter: 16px;
+  --topbar-h: 56px;
+  --bottomnav-h: 64px;
+  --content-max: 960px;
+}

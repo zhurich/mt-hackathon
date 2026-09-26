@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { api } from '../api/client'
 import type { Analytics, Profile, ScenarioSummary } from '../api/types'
-import { Async, ProgressBar } from '../components/ui'
+import { Async, Button, Card, Chip, Icon, ProgressBar, StatCard } from '../components/ui'
 import { experience, formatDate } from '../labels'
 
 export default function HomePage() {
@@ -12,17 +12,17 @@ export default function HomePage() {
   const active = scenarios.data?.find((scenario) => scenario.active_attempt_id !== null)
 
   return (
-    <div className="stack">
+    <>
       <Async query={profile}>
         {(data) => (
           <>
-            <section className="card stack" style={{ gap: '0.6rem' }}>
-              <div className="spread">
+            <Card gap={10}>
+              <div className="spread spread-top">
                 <div>
-                  <div className="muted small">{data.user.brigade} · {data.user.depot}</div>
-                  <h1 style={{ margin: 0 }}>Здравствуйте, {data.user.display_name}</h1>
+                  <div className="small muted">{data.user.brigade} · {data.user.depot}</div>
+                  <h1 style={{ marginTop: 2 }}>Здравствуйте, {data.user.display_name}</h1>
                 </div>
-                {data.streak_days > 0 && <span className="chip" title="Дней тренировок подряд">🔥 {data.streak_days} дн.</span>}
+                {data.streak_days > 0 && <Chip tone="warning" icon="flame" title="Дней тренировок подряд">{data.streak_days} дн.</Chip>}
               </div>
               <div className="spread small">
                 <strong>{data.level.title}</strong>
@@ -32,72 +32,74 @@ export default function HomePage() {
               </div>
               <ProgressBar value={data.level.progress} label="Прогресс до следующего уровня" />
               {data.level.next_title && <div className="small muted">Следующий уровень: {data.level.next_title}</div>}
-            </section>
+            </Card>
 
-            <div className="grid grid-2">
-              <section className="card">
-                <div className="muted small">Баллы рейтинга (за 30 дней)</div>
-                <div className="big-number">{data.active_points}</div>
-                <Link to="/leaderboard" className="small">Смотреть рейтинг →</Link>
-              </section>
+            {active && (
+              <Card to={`/play/${active.active_attempt_id}`}>
+                <div className="row" style={{ gap: 12, flexWrap: 'nowrap' }}>
+                  <span className="tile-icon tone-accent"><Icon name="play" size={20} /></span>
+                  <div className="grow">
+                    <div className="caption muted">Продолжить незавершённую попытку</div>
+                    <div className="strong">{active.title}</div>
+                  </div>
+                  <Icon name="chevron-right" size={20} className="chevron" />
+                </div>
+              </Card>
+            )}
+
+            <div className="grid-halves">
+              <StatCard label="Баллы рейтинга за 30 дней" value={data.active_points}
+                        hint={<Link to="/leaderboard">Смотреть рейтинг</Link>} />
               {data.expiring ? (
-                <section className="card alert alert-warning">
-                  <div className="small">⏳ Сгорают баллы</div>
-                  <div className="big-number">{data.expiring.points}</div>
-                  <div className="small">{formatDate(data.expiring.expires_at)} — пройдите сценарий, чтобы удержать позицию в рейтинге.</div>
-                </section>
+                <StatCard tone="warning" icon="hourglass" label="Сгорают баллы" value={data.expiring.points}
+                          hint={`${formatDate(data.expiring.expires_at)} — пройдите сценарий, чтобы удержать позицию.`} />
               ) : (
-                <section className="card">
-                  <div className="muted small">Пройдено сценариев</div>
-                  <div className="big-number">{data.finished_attempts}</div>
-                </section>
+                <StatCard label="Пройдено сценариев" value={data.finished_attempts} />
               )}
             </div>
 
             {data.challenges.length > 0 && (
-              <section className="stack" style={{ gap: '0.6rem' }}>
-                <h2>🎯 Челленджи</h2>
+              <>
+                <h2 className="section-title">Челленджи</h2>
                 {data.challenges.map((challenge) => (
-                  <div key={challenge.id} className="card stack" style={{ gap: '0.4rem' }}>
-                    <div className="spread">
-                      <strong>{challenge.title}</strong>
-                      <span className="chip">+{experience(challenge.reward_xp)}</span>
+                  <Card key={challenge.id}>
+                    <div className="spread spread-top">
+                      <h3>{challenge.title}</h3>
+                      <Chip tone="info">+{experience(challenge.reward_xp)}</Chip>
                     </div>
                     <div className="small secondary">{challenge.description}</div>
-                    <ProgressBar value={challenge.progress / challenge.target} label={challenge.title} />
-                    <div className="small muted">
-                      {challenge.completed_at ? '✓ Выполнен' : `${challenge.progress} из ${challenge.target} · до ${formatDate(challenge.ends)}`}
-                    </div>
-                  </div>
+                    <ProgressBar value={challenge.progress / challenge.target} tone={challenge.completed_at ? 'good' : 'info'}
+                                 size="sm" label={challenge.title} />
+                    {challenge.completed_at ? (
+                      <div><Chip tone="good" icon="check">Выполнен</Chip></div>
+                    ) : (
+                      <div className="small muted">{challenge.progress} из {challenge.target} · до {formatDate(challenge.ends)}</div>
+                    )}
+                  </Card>
                 ))}
-              </section>
+              </>
             )}
           </>
         )}
       </Async>
 
-      {active && (
-        <Link to={`/play/${active.active_attempt_id}`} className="card card-link alert alert-warning">
-          ▶ Продолжить: <strong>{active.title}</strong>
-        </Link>
-      )}
-
-      <section className="stack" style={{ gap: '0.6rem' }}>
-        <h2>Рекомендуем потренировать</h2>
-        <Async query={analytics}>
-          {(data) => (
-            <div className="grid grid-3">
-              {data.recommendations.map((item) => (
-                <Link key={item.scenario_id} to={`/scenarios/${item.scenario_id}`} className="card card-link">
-                  <strong>{item.title}</strong>
-                  <div className="small muted">{item.reason}</div>
-                </Link>
-              ))}
-            </div>
-          )}
-        </Async>
-        <Link to="/scenarios" className="btn btn-primary">Все сценарии</Link>
-      </section>
-    </div>
+      <h2 className="section-title">Рекомендуем потренировать</h2>
+      <Async query={analytics}>
+        {(data) => (
+          <div className="grid grid-3">
+            {data.recommendations.map((item) => (
+              <Card key={item.scenario_id} to={`/scenarios/${item.scenario_id}`} gap={4}>
+                <div className="row" style={{ flexWrap: 'nowrap' }}>
+                  <strong className="grow">{item.title}</strong>
+                  <Icon name="chevron-right" size={20} className="chevron" />
+                </div>
+                <div className="small muted">{item.reason}</div>
+              </Card>
+            ))}
+          </div>
+        )}
+      </Async>
+      <Button variant="secondary" block to="/scenarios">Все сценарии</Button>
+    </>
   )
 }

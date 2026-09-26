@@ -3,7 +3,7 @@ import { useQuery } from '@tanstack/react-query'
 import { api } from '../api/client'
 import type { AttemptHistoryItem, Profile } from '../api/types'
 import { useAuth } from '../auth'
-import { Async, OutcomeChip, ProgressBar } from '../components/ui'
+import { Async, Button, Card, Icon, OutcomeChip, ProgressBar } from '../components/ui'
 import { ACHIEVEMENT_ICON, experience, formatDate, formatDateTime } from '../labels'
 
 export default function ProfilePage() {
@@ -12,69 +12,77 @@ export default function ProfilePage() {
   const history = useQuery({ queryKey: ['attempts'], queryFn: () => api.get<AttemptHistoryItem[]>('/attempts?limit=20') })
 
   return (
-    <div className="stack">
+    <>
       <Async query={profile}>
         {(data) => {
           const earned = data.achievements.filter((a) => a.earned_at).length
           return (
             <>
-              <section className="card stack" style={{ gap: '0.4rem' }}>
-                <h1 style={{ margin: 0 }}>{data.user.display_name}</h1>
-                <div className="small muted">
-                  Табельный № {data.user.employee_code} · {data.user.brigade ?? 'без бригады'} · {data.user.depot ?? ''}
+              <Card as="section" gap={10}>
+                <div>
+                  <h1>{data.user.display_name}</h1>
+                  <div className="small muted" style={{ marginTop: 2 }}>
+                    Табельный № {data.user.employee_code} · {data.user.brigade ?? 'без бригады'}{data.user.depot ? ` · ${data.user.depot}` : ''}
+                  </div>
                 </div>
-                <div className="spread small" style={{ marginTop: 8 }}>
+                <div className="spread small">
                   <strong>{data.level.title}</strong>
                   <span className="muted tabular">{experience(data.total_xp)}</span>
                 </div>
                 <ProgressBar value={data.level.progress} label="Прогресс уровня" />
-                <div className="row small muted">
-                  <span>Баллы рейтинга: <strong>{data.active_points}</strong></span>
-                  <span>· Серия: {data.streak_days} дн.</span>
-                  <span>· Сценариев: {data.finished_attempts}</span>
+                <div className="row small muted" style={{ gap: 6 }}>
+                  <span>Баллы рейтинга: <strong className="secondary">{data.active_points}</strong></span>
+                  <span>·</span>
+                  <span className="inline-icon" style={{ gap: 4 }}><Icon name="flame" size={14} />Серия: {data.streak_days} дн.</span>
+                  <span>·</span>
+                  <span>Сценариев: {data.finished_attempts}</span>
                 </div>
-              </section>
+              </Card>
 
-              <section className="stack" style={{ gap: '0.6rem' }}>
-                <h2>Достижения · {earned} из {data.achievements.length}</h2>
-                <div className="grid grid-2">
-                  {data.achievements.map((item) => (
-                    <div key={item.code} className="card row" style={{ opacity: item.earned_at ? 1 : 0.6, alignItems: 'flex-start', flexWrap: 'nowrap' }}>
-                      <span style={{ fontSize: '1.8rem', filter: item.earned_at ? 'none' : 'grayscale(1)' }} aria-hidden>
-                        {ACHIEVEMENT_ICON[item.icon] ?? '🏅'}
+              <h2 className="section-title">Достижения · {earned} из {data.achievements.length}</h2>
+              <div className="grid grid-2">
+                {data.achievements.map((item) => (
+                  <Card key={item.code}>
+                    <div className="row" style={{ gap: 12, alignItems: 'flex-start', flexWrap: 'nowrap' }}>
+                      <span className={`tile-icon${item.earned_at ? ' tone-soft' : ''}`}>
+                        <Icon name={ACHIEVEMENT_ICON[item.icon] ?? 'award'} size={20} />
                       </span>
-                      <div style={{ flex: 1 }}>
+                      <div className="grow stack" style={{ gap: 4 }}>
                         <strong>{item.title}</strong>
                         <div className="small secondary">{item.description}</div>
                         {item.earned_at ? (
-                          <div className="small muted">✓ Получено {formatDate(item.earned_at)}</div>
+                          <div className="small muted inline-icon" style={{ gap: 4 }}>
+                            <Icon name="check" size={14} />Получено {formatDate(item.earned_at)}
+                          </div>
                         ) : (
-                          <div style={{ marginTop: 6 }}>
-                            <ProgressBar value={item.progress / item.target} label={item.title} />
-                            <div className="small muted tabular">{item.progress} / {item.target}</div>
+                          <div className="stack" style={{ gap: 4, marginTop: 4 }}>
+                            <ProgressBar value={item.progress / item.target} size="sm" tone="neutral" label={item.title} />
+                            <div className="caption muted tabular">{item.progress} / {item.target}</div>
                           </div>
                         )}
                       </div>
                     </div>
-                  ))}
-                </div>
-              </section>
+                  </Card>
+                ))}
+              </div>
             </>
           )
         }}
       </Async>
 
-      <section className="stack" style={{ gap: '0.6rem' }}>
-        <h2>История прохождений</h2>
-        <Async query={history}>
-          {(items) =>
-            items.length === 0 ? (
-              <p className="muted">Пока пусто — <Link to="/scenarios">пройдите первый сценарий</Link>.</p>
-            ) : (
-              <div className="stack" style={{ gap: '0.5rem' }}>
-                {items.map((item) => (
-                  <Link key={item.id} to={`/attempts/${item.id}/debrief`} className="card card-link spread">
-                    <div>
+      <h2 className="section-title">История прохождений</h2>
+      <Async query={history}>
+        {(items) =>
+          items.length === 0 ? (
+            <Card tone="muted">
+              <span className="small secondary">Пока нет пройденных сценариев. <Link to="/scenarios">Выберите первый сценарий</Link>.</span>
+            </Card>
+          ) : (
+            <div className="stack" style={{ gap: 8 }}>
+              {items.map((item) => (
+                <Card key={item.id} to={`/attempts/${item.id}/debrief`}>
+                  <div className="spread spread-top">
+                    <div className="grow">
                       <strong>{item.scenario_title}</strong>
                       <div className="small muted">
                         {formatDateTime(item.finished_at)} · лояльность {item.final_loyalty} · безопасность {item.final_safety}
@@ -84,15 +92,15 @@ export default function ProfilePage() {
                       <OutcomeChip outcome={item.outcome} />
                       <span className="small muted">+{experience(item.xp)}</span>
                     </div>
-                  </Link>
-                ))}
-              </div>
-            )
-          }
-        </Async>
-      </section>
+                  </div>
+                </Card>
+              ))}
+            </div>
+          )
+        }
+      </Async>
 
-      <button className="btn" onClick={logout}>Выйти из аккаунта</button>
-    </div>
+      <Button variant="secondary" block icon="log-out" onClick={logout}>Выйти из аккаунта</Button>
+    </>
   )
 }
