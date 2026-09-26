@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react'
+import { Suspense, lazy, type ReactNode } from 'react'
 import { Navigate, NavLink, Route, Routes, useLocation } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { api } from './api/client'
@@ -15,6 +15,9 @@ import ProgressPage from './pages/ProgressPage'
 import LeaderboardPage from './pages/LeaderboardPage'
 import NotificationsPage from './pages/NotificationsPage'
 import TrainerPage from './pages/TrainerPage'
+
+// Редактор (с React Flow) нужен только тренерам — грузится отдельным чанком по требованию.
+const EditorPage = lazy(() => import('./editor/EditorPage'))
 
 const NAV = [
   { to: '/', label: 'Главная', icon: '🏠' },
@@ -42,6 +45,7 @@ function Layout({ children }: { children: ReactNode }) {
   const { user } = useAuth()
   const { pathname } = useLocation()
   const immersive = pathname.startsWith('/play/')
+  const wide = pathname.startsWith('/trainer/editor')
   const items = user?.role === 'trainer' ? [...NAV, { to: '/trainer', label: 'Команда', icon: '👥' }] : NAV
 
   return (
@@ -59,8 +63,8 @@ function Layout({ children }: { children: ReactNode }) {
         </nav>
         <NotificationBell />
       </header>
-      <main className="content">{children}</main>
-      {!immersive && (
+      <main className={wide ? 'content-wide' : 'content'}>{children}</main>
+      {!immersive && !wide && (
         <nav className="bottomnav" aria-label="Основная навигация">
           {items.map((item) => (
             <NavLink key={item.to} to={item.to} end={item.to === '/'}>
@@ -97,6 +101,9 @@ export default function App() {
         <Route path="/profile" element={<ProfilePage />} />
         <Route path="/notifications" element={<NotificationsPage />} />
         <Route path="/trainer" element={<RequireTrainer><TrainerPage /></RequireTrainer>} />
+        <Route path="/trainer/editor/:id" element={
+          <RequireTrainer><Suspense fallback={<div className="center-screen">Загрузка редактора…</div>}><EditorPage /></Suspense></RequireTrainer>
+        } />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </Layout>

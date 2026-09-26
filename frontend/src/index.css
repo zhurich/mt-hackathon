@@ -103,6 +103,8 @@ button { font: inherit; }
   .bell { margin-left: 0; }
 }
 
+.content-wide { flex: 1; width: 100%; }
+
 .center-screen { min-height: 100dvh; display: grid; place-items: center; color: var(--muted); }
 
 /* ---------- Базовые блоки ---------- */

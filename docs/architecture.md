@@ -6,12 +6,14 @@
 flowchart LR
     subgraph Client["Frontend — React + TypeScript (mobile-first)"]
         UI[Страницы: главная, каталог,<br/>плеер, разбор, развитие,<br/>рейтинг, профиль, тренер]
+        ED[Визуальный редактор<br/>React Flow · model.ts]
         APIc[api/client.ts<br/>JWT, единый формат ошибок]
         UI --> APIc
+        ED --> APIc
     end
 
     subgraph Backend["Backend — FastAPI (stateless)"]
-        Routers[api/*<br/>auth · scenarios · attempts ·<br/>profile · integration]
+        Routers[api/*<br/>auth · scenarios · attempts ·<br/>profile · editor · integration]
         Engine[engine/*<br/>schema · conditions ·<br/>runtime · scoring · debrief]
         Gam[gamification/*<br/>уровни · баллы · достижения ·<br/>челленджи · рейтинг · уведомления]
         Anl[analytics/*<br/>мастерство · выводы ·<br/>рекомендации · команда]
@@ -44,6 +46,10 @@ flowchart LR
 | `analytics` | Мастерство по компетенциям, выводы, рекомендации, командная сводка | БД |
 | `api` | HTTP-контракт, права доступа, валидация запросов | все слои |
 | `content` | Данные: всё, что меняет методист, а не программист | — |
+
+**Редактор не дублирует правила.** Черновик живёт на клиенте (чистые функции `editor/model.ts`, история — стек документов),
+а проверку и тестовый прогон выполняет сервер тем же кодом движка (`/editor/validate`, `/editor/preview`).
+Ошибки валидатора — структуры `Issue(message, node_id)`, поэтому редактор подсвечивает конкретные узлы.
 
 **Правила игры — это данные.** Движок интерпретирует YAML, а достижения и челленджи описаны фильтрами
 по завершённым попыткам. Новый сценарий, достижение или челлендж не требует изменения кода.

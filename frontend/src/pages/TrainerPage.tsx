@@ -1,8 +1,9 @@
 import { useState } from 'react'
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { Link } from 'react-router-dom'
+import { useQuery } from '@tanstack/react-query'
 import { api } from '../api/client'
 import type { Analytics, ScenarioSummary, TeamAnalytics, User } from '../api/types'
-import { Async, ErrorBox } from '../components/ui'
+import { Async } from '../components/ui'
 import { percent } from '../labels'
 import { AnalyticsView } from './ProgressPage'
 
@@ -123,67 +124,30 @@ function HardestTab({ data }: { data: TeamAnalytics }) {
 }
 
 function ScenariosTab() {
-  const queryClient = useQueryClient()
   const scenarios = useQuery({ queryKey: ['scenarios'], queryFn: () => api.get<ScenarioSummary[]>('/scenarios') })
-  const [content, setContent] = useState('')
-  const validate = useMutation({
-    mutationFn: () => api.post<{ valid: boolean; errors: string[]; scenario: ScenarioSummary | null }>('/scenarios/validate', { content }),
-  })
-  const publish = useMutation({
-    mutationFn: () => api.post<ScenarioSummary>('/scenarios', { content }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['scenarios'] })
-      queryClient.invalidateQueries({ queryKey: ['notifications'] })
-    },
-  })
-
-  async function loadCurrent(id: string) {
-    const graph = await api.get<Record<string, unknown>>(`/scenarios/${id}/graph`)
-    setContent(JSON.stringify({ ...graph, version: Number(graph.version) + 1 }, null, 2))
-    validate.reset()
-    publish.reset()
-  }
-
   return (
     <div className="stack">
       <section className="card stack" style={{ gap: '0.5rem' }}>
-        <h2>Опубликованные сценарии</h2>
+        <div className="spread">
+          <h2 style={{ margin: 0 }}>Сценарии</h2>
+          <Link to="/trainer/editor/new" className="btn btn-primary">+ Создать сценарий</Link>
+        </div>
+        <p className="small secondary">
+          Визуальный редактор: граф решений, проверка на лету, тестовый прогон и публикация без перезапуска и правки кода.
+          Сотрудники получат уведомление о новом сценарии.
+        </p>
         <Async query={scenarios}>
           {(items) => (
             <div className="stack" style={{ gap: '0.4rem' }}>
               {items.map((item) => (
                 <div key={item.id} className="spread small">
                   <span><strong>{item.title}</strong> <span className="muted">· {item.id} v{item.version} · {item.decisions} решений</span></span>
-                  <button className="btn" onClick={() => loadCurrent(item.id)}>Новая версия</button>
+                  <Link to={`/trainer/editor/${item.id}`} className="btn">✎ Редактировать</Link>
                 </div>
               ))}
             </div>
           )}
         </Async>
-      </section>
-
-      <section className="card stack" style={{ gap: '0.5rem' }}>
-        <h2>Загрузка сценария (YAML или JSON)</h2>
-        <p className="small secondary">
-          Формат описан в <code>docs/scenario-format.md</code>. Новый сценарий появится у сотрудников сразу — с уведомлением,
-          без перезапуска и правки кода.
-        </p>
-        <textarea rows={14} value={content} onChange={(e) => setContent(e.target.value)} placeholder="id: my-scenario&#10;version: 1&#10;…" />
-        <div className="row">
-          <button className="btn" disabled={!content || validate.isPending} onClick={() => validate.mutate()}>Проверить</button>
-          <button className="btn btn-primary" disabled={!content || publish.isPending} onClick={() => publish.mutate()}>Опубликовать</button>
-        </div>
-        {validate.data && (validate.data.valid ? (
-          <div className="alert alert-positive small">✓ Сценарий корректен: {validate.data.scenario?.title}, {validate.data.scenario?.decisions} решений.</div>
-        ) : (
-          <div className="alert alert-critical small">
-            <strong>Ошибки:</strong>
-            <ul style={{ margin: '0.3rem 0 0', paddingLeft: '1.1rem' }}>{validate.data.errors.map((e) => <li key={e}>{e}</li>)}</ul>
-          </div>
-        ))}
-        {validate.error && <ErrorBox error={validate.error} />}
-        {publish.data && <div className="alert alert-positive small">✓ Опубликовано: {publish.data.title} v{publish.data.version}</div>}
-        {publish.error && <ErrorBox error={publish.error} />}
       </section>
     </div>
   )

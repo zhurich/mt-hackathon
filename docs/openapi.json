@@ -843,6 +843,226 @@
         }
       }
     },
+    "/api/v1/editor/dictionaries": {
+      "get": {
+        "tags": [
+          "Редактор сценариев"
+        ],
+        "summary": "Справочники для форм редактора",
+        "operationId": "dictionaries_api_v1_editor_dictionaries_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "type": "object",
+                  "title": "Response Dictionaries Api V1 Editor Dictionaries Get"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/api/v1/editor/parse": {
+      "post": {
+        "tags": [
+          "Редактор сценариев"
+        ],
+        "summary": "Разобрать YAML/JSON в объект (без проверки) — для импорта в редактор",
+        "operationId": "parse_api_v1_editor_parse_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Content"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "type": "object",
+                  "title": "Response Parse Api V1 Editor Parse Post"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/api/v1/editor/validate": {
+      "post": {
+        "tags": [
+          "Редактор сценариев"
+        ],
+        "summary": "Проверка черновика с привязкой ошибок к узлам",
+        "operationId": "validate_api_v1_editor_validate_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Content"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EditorValidation"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/api/v1/editor/yaml": {
+      "post": {
+        "tags": [
+          "Редактор сценариев"
+        ],
+        "summary": "Преобразовать черновик в YAML (для сохранения в репозиторий)",
+        "operationId": "to_yaml_api_v1_editor_yaml_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Content"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": {
+                    "type": "string"
+                  },
+                  "type": "object",
+                  "title": "Response To Yaml Api V1 Editor Yaml Post"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/api/v1/editor/preview": {
+      "post": {
+        "tags": [
+          "Редактор сценариев"
+        ],
+        "summary": "Тестовый шаг черновика тем же движком (без сохранения и без таймера)",
+        "operationId": "preview_api_v1_editor_preview_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PreviewRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "type": "object",
+                  "title": "Response Preview Api V1 Editor Preview Post"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
     "/api/v1/integration/org-units": {
       "get": {
         "tags": [
@@ -1524,6 +1744,22 @@
         ],
         "title": "CompetencyOut"
       },
+      "Content": {
+        "properties": {
+          "content": {
+            "type": "string",
+            "maxLength": 200000,
+            "minLength": 1,
+            "title": "Content",
+            "description": "Сценарий в формате YAML или JSON"
+          }
+        },
+        "type": "object",
+        "required": [
+          "content"
+        ],
+        "title": "Content"
+      },
       "DecisionRequest": {
         "properties": {
           "choice_id": {
@@ -1547,6 +1783,37 @@
         },
         "type": "object",
         "title": "DecisionRequest"
+      },
+      "EditorValidation": {
+        "properties": {
+          "valid": {
+            "type": "boolean",
+            "title": "Valid"
+          },
+          "issues": {
+            "items": {
+              "$ref": "#/components/schemas/IssueOut"
+            },
+            "type": "array",
+            "title": "Issues",
+            "default": []
+          },
+          "scenario": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ScenarioSummary"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "valid"
+        ],
+        "title": "EditorValidation"
       },
       "EmployeeOut": {
         "properties": {
@@ -1774,6 +2041,31 @@
           "value"
         ],
         "title": "HudItem"
+      },
+      "IssueOut": {
+        "properties": {
+          "node_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Node Id"
+          },
+          "message": {
+            "type": "string",
+            "title": "Message"
+          }
+        },
+        "type": "object",
+        "required": [
+          "node_id",
+          "message"
+        ],
+        "title": "IssueOut"
       },
       "LastDecision": {
         "properties": {
@@ -2044,6 +2336,51 @@
           "parent_id"
         ],
         "title": "OrgUnitOut"
+      },
+      "PreviewRequest": {
+        "properties": {
+          "content": {
+            "type": "string",
+            "maxLength": 200000,
+            "minLength": 1,
+            "title": "Content",
+            "description": "Сценарий в формате YAML или JSON"
+          },
+          "state": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "State",
+            "description": "Состояние из предыдущего шага; null — начать сначала"
+          },
+          "choice_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Choice Id"
+          },
+          "timeout": {
+            "type": "boolean",
+            "title": "Timeout",
+            "default": false
+          }
+        },
+        "type": "object",
+        "required": [
+          "content"
+        ],
+        "title": "PreviewRequest"
       },
       "Profile": {
         "properties": {
