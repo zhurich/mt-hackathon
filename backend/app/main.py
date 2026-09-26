@@ -6,7 +6,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api import attempts, auth, integration, profile, scenarios
+from app.api import attempts, auth, editor, integration, profile, scenarios
 from app.config import get_settings
 from app.db import Base, SessionLocal, engine
 from app.errors import install_error_handlers
@@ -63,7 +63,7 @@ async def security_headers(request: Request, call_next):
 
 install_error_handlers(app)
 
-for module in (auth, scenarios, attempts, profile, integration):
+for module in (auth, scenarios, attempts, profile, editor, integration):
     app.include_router(module.router, prefix=API_PREFIX)
 
 

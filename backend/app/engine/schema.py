@@ -5,6 +5,7 @@ Pydantic проверяет форму полей, `check_graph` — смысл:
 """
 
 from collections import deque
+from dataclasses import dataclass
 from typing import Annotated, Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, ValidationError
@@ -84,6 +85,11 @@ class Interrupt(DslModel):
     next: str
 
 
+class Position(DslModel):
+    x: float
+    y: float
+
+
 class Initial(DslModel):
     loyalty: int = Field(default=50, ge=0, le=100)
     safety: int = Field(default=50, ge=0, le=100)
@@ -106,6 +112,8 @@ class Scenario(DslModel):
     interrupts: list[Interrupt] = Field(default_factory=list)
     # Переменные, которые интерфейс показывает игроку: {имя переменной: подпись}.
     hud: dict[str, str] = Field(default_factory=dict)
+    # Расположение узлов в визуальном редакторе. На игру не влияет.
+    layout: dict[str, Position] = Field(default_factory=dict)
 
     @property
     def competencies(self) -> list[str]:
@@ -122,10 +130,22 @@ class Scenario(DslModel):
         return node
 
 
+@dataclass(frozen=True)
+class Issue:
+    """Проблема в сценарии. node_id — узел, к которому она относится (для подсветки в редакторе)."""
+
+    message: str
+    node_id: str | None = None
+
+    def __str__(self) -> str:
+        return self.message
+
+
 class ScenarioError(ValueError):
-    def __init__(self, errors: list[str]):
-        super().__init__("; ".join(errors))
-        self.errors = errors
+    def __init__(self, issues: list[Issue | str]):
+        self.issues = [issue if isinstance(issue, Issue) else Issue(issue) for issue in issues]
+        self.errors = [issue.message for issue in self.issues]
+        super().__init__("; ".join(self.errors))
 
 
 def _edges(node: ChoiceNode | RouterNode | EndingNode) -> list[str]:
@@ -139,83 +159,86 @@ def _edges(node: ChoiceNode | RouterNode | EndingNode) -> list[str]:
     return []
 
 
-def check_graph(scenario: Scenario, known_competencies: set[str]) -> list[str]:
+def check_graph(scenario: Scenario, known_competencies: set[str]) -> list[Issue]:
     """Возвращает список смысловых ошибок сценария (пустой — сценарий корректен)."""
-    errors: list[str] = []
+    issues: list[Issue] = []
     nodes = scenario.nodes
     declared_vars = set(scenario.initial.vars)
 
-    def check_target(where: str, target: str) -> None:
-        if target not in nodes:
-            errors.append(f"{where}: ссылка на несуществующий узел '{target}'")
+    def add(message: str, node_id: str | None = None) -> None:
+        issues.append(Issue(message, node_id))
 
-    def check_conditions(where: str, conditions: list[str]) -> None:
+    def check_target(where: str, target: str, node_id: str | None) -> None:
+        if target not in nodes:
+            add(f"{where}: ссылка на несуществующий узел '{target}'", node_id)
+
+    def check_conditions(where: str, conditions: list[str], node_id: str | None) -> None:
         for text in conditions:
             try:
                 condition = parse_condition(text)
             except ConditionError as exc:
-                errors.append(f"{where}: {exc}")
+                add(f"{where}: {exc}", node_id)
                 continue
             if condition.var_name is not None and condition.var_name not in declared_vars:
-                errors.append(f"{where}: переменная '{condition.var_name}' не объявлена в initial.vars")
+                add(f"{where}: переменная '{condition.var_name}' не объявлена в initial.vars", node_id)
 
-    def check_effects(where: str, effects: Effects) -> None:
+    def check_effects(where: str, effects: Effects, node_id: str) -> None:
         for name in effects.vars:
             if name not in declared_vars:
-                errors.append(f"{where}: переменная '{name}' не объявлена в initial.vars")
+                add(f"{where}: переменная '{name}' не объявлена в initial.vars", node_id)
 
-    check_target("start", scenario.start)
+    check_target("start", scenario.start, None)
     for name in scenario.hud:
         if name not in declared_vars:
-            errors.append(f"hud: переменная '{name}' не объявлена в initial.vars")
+            add(f"hud: переменная '{name}' не объявлена в initial.vars")
     for index, interrupt in enumerate(scenario.interrupts):
-        check_target(f"interrupts[{index}]", interrupt.next)
-        check_conditions(f"interrupts[{index}]", interrupt.if_)
+        check_target(f"interrupts[{index}]", interrupt.next, None)
+        check_conditions(f"interrupts[{index}]", interrupt.if_, None)
 
     for node_id, node in nodes.items():
         if isinstance(node, ChoiceNode):
             for code in node.competencies:
                 if code not in known_competencies:
-                    errors.append(f"узел '{node_id}': неизвестная компетенция '{code}'")
+                    add(f"узел '{node_id}': неизвестная компетенция '{code}'", node_id)
             ids = [choice.id for choice in node.choices]
             if len(ids) != len(set(ids)):
-                errors.append(f"узел '{node_id}': id вариантов должны быть уникальны")
+                add(f"узел '{node_id}': id вариантов должны быть уникальны", node_id)
             if node.timer and not node.on_timeout:
-                errors.append(f"узел '{node_id}': задан timer, но нет on_timeout")
+                add(f"узел '{node_id}': задан timer, но нет on_timeout", node_id)
             if node.on_timeout and not node.timer:
-                errors.append(f"узел '{node_id}': задан on_timeout, но нет timer")
+                add(f"узел '{node_id}': задан on_timeout, но нет timer", node_id)
             for choice in node.choices:
                 where = f"узел '{node_id}', вариант '{choice.id}'"
-                check_target(where, choice.next)
-                check_conditions(where, choice.if_)
-                check_effects(where, choice.effects)
+                check_target(where, choice.next, node_id)
+                check_conditions(where, choice.if_, node_id)
+                check_effects(where, choice.effects, node_id)
             if node.on_timeout:
-                check_target(f"узел '{node_id}', on_timeout", node.on_timeout.next)
-                check_effects(f"узел '{node_id}', on_timeout", node.on_timeout.effects)
+                check_target(f"узел '{node_id}', on_timeout", node.on_timeout.next, node_id)
+                check_effects(f"узел '{node_id}', on_timeout", node.on_timeout.effects, node_id)
             if all(choice.if_ for choice in node.choices):
-                errors.append(f"узел '{node_id}': хотя бы один вариант должен быть доступен без условия")
+                add(f"узел '{node_id}': хотя бы один вариант должен быть доступен без условия", node_id)
         elif isinstance(node, RouterNode):
             for index, route in enumerate(node.routes):
                 where = f"узел '{node_id}', маршрут {index}"
-                check_target(where, route.next)
-                check_conditions(where, route.if_)
+                check_target(where, route.next, node_id)
+                check_conditions(where, route.if_, node_id)
                 is_last = index == len(node.routes) - 1
                 if is_last and route.if_:
-                    errors.append(f"узел '{node_id}': последний маршрут должен быть без if (ветка «иначе»)")
+                    add(f"узел '{node_id}': последний маршрут должен быть без if (ветка «иначе»)", node_id)
                 if not is_last and not route.if_:
-                    errors.append(f"узел '{node_id}': маршрут {index} без if перекрывает следующие маршруты")
+                    add(f"узел '{node_id}': маршрут {index} без if перекрывает следующие маршруты", node_id)
 
-    if errors:  # дальнейший анализ графа имеет смысл только при корректных ссылках
-        return errors
+    if issues:  # дальнейший анализ графа имеет смысл только при корректных ссылках
+        return issues
 
     endings = {node_id for node_id, node in nodes.items() if isinstance(node, EndingNode)}
     if not endings:
-        return ["в сценарии нет ни одного узла ending"]
+        return [Issue("в сценарии нет ни одного узла ending")]
 
     # Прямой обход: всё достижимо из start (цели прерываний тоже считаем достижимыми).
     reachable = _bfs([scenario.start, *(i.next for i in scenario.interrupts)], lambda n: _edges(nodes[n]))
     for node_id in nodes.keys() - reachable:
-        errors.append(f"узел '{node_id}' недостижим из start")
+        add(f"узел '{node_id}' недостижим из start", node_id)
 
     # Обратный обход от финалов: из каждого узла должен быть путь к финалу (нет «ловушек»).
     reverse: dict[str, list[str]] = {node_id: [] for node_id in nodes}
@@ -224,8 +247,8 @@ def check_graph(scenario: Scenario, known_competencies: set[str]) -> list[str]:
             reverse[target].append(node_id)
     can_finish = _bfs(list(endings), lambda n: reverse[n])
     for node_id in nodes.keys() - can_finish:
-        errors.append(f"из узла '{node_id}' нельзя дойти ни до одного финала")
-    return errors
+        add(f"из узла '{node_id}' нельзя дойти ни до одного финала", node_id)
+    return issues
 
 
 def _bfs(starts: list[str], neighbours) -> set[str]:
@@ -244,13 +267,15 @@ def load_scenario(data: dict[str, Any], known_competencies: set[str]) -> Scenari
     try:
         scenario = Scenario.model_validate(data)
     except ValidationError as exc:
-        raise ScenarioError([_format_pydantic_error(err) for err in exc.errors()]) from None
-    errors = check_graph(scenario, known_competencies)
-    if errors:
-        raise ScenarioError(errors)
+        raise ScenarioError([_pydantic_issue(err) for err in exc.errors()]) from None
+    issues = check_graph(scenario, known_competencies)
+    if issues:
+        raise ScenarioError(issues)
     return scenario
 
 
-def _format_pydantic_error(err: dict[str, Any]) -> str:
-    location = ".".join(str(part) for part in err["loc"])
-    return f"{location}: {err['msg']}"
+def _pydantic_issue(err: dict[str, Any]) -> Issue:
+    loc = err["loc"]
+    location = ".".join(str(part) for part in loc)
+    node_id = str(loc[1]) if len(loc) > 1 and loc[0] == "nodes" else None
+    return Issue(f"{location}: {err['msg']}", node_id)
