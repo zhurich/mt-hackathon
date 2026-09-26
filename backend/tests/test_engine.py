@@ -167,6 +167,7 @@ def test_debrief_suggests_better_option():
     ("mutate", "message"),
     [
         (lambda d: d["nodes"]["start"]["choices"][0].update(next="nowhere"), "несуществующий узел 'nowhere'"),
+        (lambda d: d["nodes"]["start"]["choices"][0].update(next=""), "не указано, куда ведёт переход"),
         (lambda d: d["nodes"]["start"].pop("on_timeout"), "нет on_timeout"),
         (lambda d: d["nodes"]["check"]["routes"].reverse(), "последний маршрут должен быть без if"),
         (lambda d: d["nodes"]["start"]["choices"][0].update({"if": ["vars.speed > 3"]}), "'speed' не объявлена"),

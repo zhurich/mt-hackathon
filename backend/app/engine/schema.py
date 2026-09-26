@@ -169,7 +169,9 @@ def check_graph(scenario: Scenario, known_competencies: set[str]) -> list[Issue]
         issues.append(Issue(message, node_id))
 
     def check_target(where: str, target: str, node_id: str | None) -> None:
-        if target not in nodes:
+        if not target:
+            add(f"{where}: не указано, куда ведёт переход", node_id)
+        elif target not in nodes:
             add(f"{where}: ссылка на несуществующий узел '{target}'", node_id)
 
     def check_conditions(where: str, conditions: list[str], node_id: str | None) -> None:
