@@ -1,6 +1,7 @@
 /* Визуальный редактор сценариев. Токены и базовые компоненты — из index.css (дизайн-система «ВСМ · Обучение»). */
 
-.editor { display: flex; flex-direction: column; height: 100dvh; background: var(--bg); }
+/* На узком экране страница прокручивается: холст фиксированной высоты, панель под ним — во всю высоту содержимого. */
+.editor { display: flex; flex-direction: column; min-height: 100dvh; background: var(--bg); }
 
 .etoolbar {
   display: flex; align-items: center; gap: var(--space-3); flex-wrap: wrap;
@@ -14,14 +15,18 @@
 .estatus.bad { color: var(--critical-text); border-color: var(--critical); }
 .ebanner { margin: var(--space-2) var(--space-3) 0; }
 
-.ebody { flex: 1; display: grid; grid-template-columns: 1fr; min-height: 0; }
-.ecanvas { position: relative; min-height: 60vh; }
+/* minmax(0, …): колонка не раздувается до собственной ширины полей формы (иначе на телефоне панель шире экрана). */
+.ebody { flex: 1; display: grid; grid-template-columns: minmax(0, 1fr); align-content: start; }
+.ecanvas { position: relative; height: 60dvh; }
 .epanel { background: var(--surface); border-top: 1px solid var(--border-soft); display: flex; flex-direction: column; min-height: 0; }
-.epanel > .tabs { margin: var(--space-3); }
-.epanel-body { padding: 0 var(--space-4) var(--space-5); overflow-y: auto; }
+/* У .tabs overflow-x: auto, из-за чего flex-элемент может сжиматься по высоте, когда содержимое панели длинное. */
+.epanel > .tabs { flex: none; margin: var(--space-3); }
+.epanel-body { padding: 0 var(--space-4) var(--space-5); }
 @media (min-width: 1000px) {
-  .ebody { grid-template-columns: 1fr 420px; }
-  .ecanvas { min-height: 0; }
+  .editor { height: 100dvh; }
+  .ebody { grid-template-columns: minmax(0, 1fr) 420px; align-content: stretch; min-height: 0; }
+  .ecanvas { height: auto; min-height: 0; }
+  .epanel-body { flex: 1; min-height: 0; overflow-y: auto; }
   .epanel { border-top: 0; border-left: 1px solid var(--border-soft); }
 }
 
@@ -89,14 +94,14 @@
 .efield label, .elabel { font: var(--text-label); color: var(--text-2); }
 .ehint { font: var(--text-caption); font-weight: var(--fw-regular); color: var(--muted); }
 .eerror { color: var(--critical-text); }
-.egrid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-2); }
-.egrid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--space-2); }
-@media (max-width: 480px) { .egrid-3 { grid-template-columns: 1fr; } }
+.egrid-2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-2); }
+.egrid-3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--space-2); }
+@media (max-width: 480px) { .egrid-3 { grid-template-columns: minmax(0, 1fr); } }
 .esection { display: flex; flex-direction: column; gap: var(--space-2); padding-top: var(--space-3); border-top: 1px solid var(--grid); }
 .esub { display: flex; flex-direction: column; gap: var(--space-2); padding-left: var(--space-3); border-left: 2px solid var(--border); }
 .echeck { display: flex; gap: var(--space-2); align-items: center; font-weight: var(--fw-semibold); font-size: var(--fs-small); cursor: pointer; }
 .econd { display: flex; gap: var(--space-1); align-items: center; }
-.econd select { width: auto; }
+.econd select { width: auto; min-width: 0; }
 .econd input { flex: 1; min-width: 0; }
 .ebtn-icon {
   flex: none; width: 28px; height: 28px; display: inline-grid; place-items: center; padding: 0;
@@ -123,7 +128,7 @@
 }
 .echoice-title { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: var(--fs-small); }
 .echoice-body { display: flex; flex-direction: column; gap: 10px; padding: 0 10px var(--space-3); }
-.evar { display: grid; grid-template-columns: 7rem 5.5rem 1fr auto; gap: 6px; align-items: end; }
+.evar { display: grid; grid-template-columns: 7rem 5.5rem minmax(0, 1fr) auto; gap: 6px; align-items: end; }
 .evar-name { padding-bottom: 9px; overflow: hidden; text-overflow: ellipsis; }
 .eissues { margin: var(--space-1) 0 0; padding-left: 18px; }
 .eissue {

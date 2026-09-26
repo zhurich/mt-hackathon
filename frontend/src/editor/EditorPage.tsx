@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { ReactFlowProvider } from '@xyflow/react'
@@ -20,6 +20,8 @@ import './editor.css'
 
 const DRAFT_PREFIX = 'vsm.editor.draft.'
 const VALIDATE_DELAY_MS = 700
+/** Ширина, с которой панель стоит справа от холста (см. editor.css). */
+const SIDE_PANEL_QUERY = '(min-width: 1000px)'
 
 function readDraft(key: string): ScenarioDoc | null {
   try {
@@ -129,9 +131,15 @@ function Editor({ draftKey, initial, dict }: { draftKey: string; initial: Scenar
   }, [issues])
   const globalIssues = (issues ?? []).filter((issue) => !issue.node_id || !(issue.node_id in doc.nodes)).map((i) => i.message)
 
+  const panelRef = useRef<HTMLElement>(null)
   const select = useCallback((nodeId: string | null) => {
     setSelectedId(nodeId)
-    if (nodeId) setTab('node')
+    if (!nodeId) return
+    setTab('node')
+    // На узком экране панель под холстом — прокручиваем к ней, иначе выбор узла не виден.
+    if (!window.matchMedia(SIDE_PANEL_QUERY).matches) {
+      requestAnimationFrame(() => panelRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }))
+    }
   }, [])
 
   // ---------- Действия ----------
@@ -277,7 +285,7 @@ function Editor({ draftKey, initial, dict }: { draftKey: string; initial: Scenar
           </div>
         </div>
 
-        <aside className="epanel">
+        <aside className="epanel" ref={panelRef}>
           {previewOpen ? (
             <PreviewPanel doc={doc} onClose={() => setPreviewOpen(false)} onFocusNode={focusOn} />
           ) : (
