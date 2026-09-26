@@ -4,6 +4,7 @@
 ситуации, варианты и изменения шкал. Подробности открываются в разборе после финала.
 """
 
+import random
 import time
 from typing import Any
 
@@ -112,6 +113,14 @@ def _load(db: Db, attempt_id: int, user: User, lock: bool = False) -> Attempt:
     return attempt
 
 
+def _shuffled_choices(scenario: Scenario, attempt: Attempt, state: GameState) -> list[ChoiceOut]:
+    """Варианты в случайном порядке, чтобы лучший ответ нельзя было угадать по позиции.
+    Порядок зависит от попытки и узла — при перезагрузке страницы он не меняется."""
+    choices = [ChoiceOut(id=c.id, text=c.text) for c in runtime.available_choices(scenario, state)]
+    random.Random(f"{attempt.id}:{state.node_id}").shuffle(choices)
+    return choices
+
+
 def _view(scenario: Scenario, attempt: Attempt, state: GameState, last: dict | None = None) -> AttemptView:
     node = scenario.nodes[state.node_id]
     node_out = ending = None
@@ -122,7 +131,7 @@ def _view(scenario: Scenario, attempt: Attempt, state: GameState, last: dict | N
             speaker=node.speaker,
             speaker_name=node.speaker_name,
             text=node.text,
-            choices=[ChoiceOut(id=c.id, text=c.text) for c in runtime.available_choices(scenario, state)],
+            choices=_shuffled_choices(scenario, attempt, state),
             timer=node.timer,
             deadline_ms=round(deadline * 1000) if deadline else None,
         )

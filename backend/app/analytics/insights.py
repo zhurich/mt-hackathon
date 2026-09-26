@@ -131,21 +131,21 @@ def _recommendations(db: Session, attempts: list[Attempt], competencies: list[di
         (c for c in competencies if c["mastery"] is not None and c["status"] != "mastered"),
         key=lambda c: c["mastery"],
     )
+    candidates = [s for s in latest_scenarios(db) if s.id not in succeeded]
     recommendations: list[dict] = []
-    for scenario in latest_scenarios(db):
-        if scenario.id in succeeded:
+    # Сначала — по одному сценарию на каждую слабую компетенцию (от самой слабой), чтобы советы не повторялись.
+    for competency in focus:
+        scenario = next((s for s in candidates if competency["code"] in s.competencies), None)
+        if scenario is None:
             continue
-        matching = [c for c in focus if c["code"] in scenario.competencies]
-        if matching:
-            reason = f"Тренирует «{matching[0]['title']}» ({round(matching[0]['mastery'])} %)"
-            priority = matching[0]["mastery"]
-        elif scenario.id not in tried:
-            reason, priority = "Вы ещё не проходили этот сценарий", 100.0
-        else:
-            reason, priority = "Сценарий ещё не пройден на успех", 90.0
-        recommendations.append({"scenario_id": scenario.id, "title": scenario.title, "reason": reason,
-                                "priority": priority})
-    recommendations.sort(key=lambda item: item["priority"])
+        candidates.remove(scenario)
+        recommendations.append({"scenario_id": scenario.id, "title": scenario.title,
+                                "reason": f"Тренирует «{competency['title']}» ({round(competency['mastery'])} %)"})
+    # Затем — непройденные и не пройденные на успех.
+    candidates.sort(key=lambda s: s.id in tried)
+    for scenario in candidates:
+        reason = "Сценарий ещё не пройден на успех" if scenario.id in tried else "Вы ещё не проходили этот сценарий"
+        recommendations.append({"scenario_id": scenario.id, "title": scenario.title, "reason": reason})
     return recommendations[:3]
 
 

@@ -17,8 +17,9 @@ type Tab = (typeof TABS)[number]['id']
 /** Последовательная шкала одного оттенка (0 → светлый, 100 → тёмный); значение всегда подписано в ячейке. */
 function heatStyle(value: number | null) {
   if (value === null) return { background: 'var(--surface-2)', color: 'var(--muted)' }
-  const step = value < 40 ? 'var(--seq-100)' : value < 60 ? 'var(--seq-300)' : value < 80 ? 'var(--seq-500)' : 'var(--seq-700)'
-  const darkCell = value >= 60
+  // Границы совпадают с порогами статусов: < 50 — «проседает», ≥ 75 — «освоена».
+  const step = value < 50 ? 'var(--seq-100)' : value < 65 ? 'var(--seq-300)' : value < 75 ? 'var(--seq-500)' : 'var(--seq-700)'
+  const darkCell = value >= 65
   return { background: step, color: darkCell ? 'var(--surface)' : 'var(--text)' }
 }
 
@@ -51,7 +52,7 @@ function TeamTab({ data }: { data: TeamAnalytics }) {
           </tbody>
         </table>
       </div>
-      <p className="small muted">Светлее — ниже мастерство. Ниже 50 % — компетенция «проседает» и требует внимания.</p>
+      <p className="small muted">Светлее — ниже мастерство. Самые светлые ячейки (ниже 50 %) — компетенция «проседает» и требует внимания; самые тёмные (от 75 %) — освоена.</p>
     </section>
   )
 }

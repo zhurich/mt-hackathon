@@ -68,7 +68,7 @@ export default function DebriefPage() {
               <OutcomeChip outcome={debrief.ending.outcome} />
               <h2 style={{ margin: 0 }}>{debrief.ending.title}</h2>
               <p className="secondary">{debrief.ending.text}</p>
-              <div className="grid grid-3 small">
+              <div className="stats-row small">
                 <div><div className="muted">Лояльность</div><strong className="big-number">{result.final_loyalty}</strong></div>
                 <div><div className="muted">Безопасность</div><strong className="big-number">{result.final_safety}</strong></div>
                 <div><div className="muted">Лучших решений</div><strong className="big-number">{result.best_decisions}/{result.decisions}</strong></div>

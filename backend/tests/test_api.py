@@ -41,6 +41,16 @@ def test_play_hides_answer_quality(client, conductor):
     assert view["node"]["deadline_ms"] > view["server_time_ms"]
 
 
+def test_choice_order_is_shuffled_but_stable(client, conductor):
+    first_ids = set()
+    for _ in range(6):
+        view = client.post(f"{API}/attempts", json={"scenario_id": "medical-emergency"}, headers=conductor).json()
+        again = client.get(f"{API}/attempts/{view['id']}", headers=conductor).json()
+        assert again["node"]["choices"] == view["node"]["choices"]  # перезагрузка не меняет порядок
+        first_ids.add(view["node"]["choices"][0]["id"])
+    assert len(first_ids) > 1  # лучший вариант не всегда на первом месте
+
+
 def test_full_cycle_updates_profile_and_rating(client):
     headers = login(client, "natalia")
     before = client.get(f"{API}/profile", headers=headers).json()

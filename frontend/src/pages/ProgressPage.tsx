@@ -21,7 +21,7 @@ export function AnalyticsView({ data }: { data: Analytics }) {
         ))}
       </section>
 
-      <div className="grid grid-3">
+      <div className="stats-grid">
         <div className="card"><div className="muted small">Пройдено</div><div className="big-number">{stats.attempts}</div></div>
         <div className="card"><div className="muted small">Успешных</div><div className="big-number">{percent(stats.success_rate)}</div></div>
         <div className="card"><div className="muted small">Таймаутов</div><div className="big-number">{percent(stats.timeout_rate)}</div></div>
