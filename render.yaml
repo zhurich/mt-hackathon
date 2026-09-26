@@ -1,0 +1,25 @@
+# Развёртывание backend на Render.com (Blueprint): New → Blueprint → выбрать этот репозиторий.
+# Frontend на Vercel проксирует /api/* на этот сервис (frontend/vercel.json), поэтому CORS не нужен.
+
+services:
+  - type: web
+    name: vsm-trainer-api
+    runtime: python
+    region: frankfurt
+    plan: free
+    rootDir: backend
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT --proxy-headers --forwarded-allow-ips="*"
+    healthCheckPath: /api/health
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.12.7
+      - key: APP_ENV
+        value: prod
+      - key: JWT_SECRET
+        generateValue: true
+      # Демо-стенд: синтетические сотрудники и история создаются при каждом запуске.
+      - key: SEED_DEMO
+        value: "true"
+      - key: DEMO_INTEGRATION_KEY
+        value: demo-integration-key

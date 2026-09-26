@@ -1,3 +1,8 @@
 {
-  "rewrites": [{ "source": "/((?!assets/).*)", "destination": "/index.html" }]
+  "rewrites": [
+    { "source": "/api/:path*", "destination": "https://vsm-trainer-api.onrender.com/api/:path*" },
+    { "source": "/docs", "destination": "https://vsm-trainer-api.onrender.com/docs" },
+    { "source": "/openapi.json", "destination": "https://vsm-trainer-api.onrender.com/openapi.json" },
+    { "source": "/((?!assets/).*)", "destination": "/index.html" }
+  ]
 }

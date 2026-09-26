@@ -63,6 +63,20 @@ npm run dev
 
 Ключ API интеграции: заголовок `X-API-Key: demo-integration-key`.
 
+## Развёртывание в облаке (демо-стенд)
+
+Frontend — на Vercel, backend — на Render.com. Vercel проксирует `/api/*`, `/docs` и `/openapi.json`
+на backend (`frontend/vercel.json`), поэтому для браузера всё работает с одного домена и CORS не нужен.
+
+1. **Backend.** На https://render.com: *New → Blueprint* → выбрать этот репозиторий. Render прочитает `render.yaml`
+   и создаст сервис `vsm-trainer-api`: Python 3.12, регион Frankfurt, секрет JWT генерируется автоматически.
+   Проверка: `https://<сервис>.onrender.com/api/health` → `{"status":"ok"}`.
+2. **Адрес backend.** Если Render выдал адрес не `https://vsm-trainer-api.onrender.com`, замените его в `frontend/vercel.json`.
+3. **Frontend.** Проект Vercel с корнем `frontend` (Framework: Vite). Переменные окружения не нужны.
+
+На бесплатном тарифе Render сервис засыпает после 15 минут без запросов, первый запрос после паузы
+обрабатывается до минуты. База SQLite не сохраняется между перезапусками: демо-данные создаются заново.
+
 ## Тесты и проверки
 
 ```bash
