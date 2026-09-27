@@ -2,7 +2,7 @@ from typing import Literal
 
 from fastapi import APIRouter, Query
 from pydantic import BaseModel
-from sqlalchemy import func, select, update
+from sqlalchemy import delete, func, select, update
 
 from app.analytics.competencies import competency_overview
 from app.analytics.insights import personal_analytics
@@ -15,7 +15,9 @@ from app.gamification.context import build_context
 from app.gamification.leaderboard import leaderboard
 from app.gamification.levels import level_info
 from app.gamification.notifications import refresh
-from app.models import Notification, User
+from app.models import (
+    Attempt, AttemptEvent, Notification, User, UserAchievement, UserChallenge, UserCompetency, XpGrant,
+)
 from app.timeutil import UtcDatetime, utcnow
 
 router = APIRouter(tags=["Профиль и геймификация"])
@@ -86,6 +88,14 @@ def profile(db: Db, user: CurrentUser) -> Profile:
         challenges=challenges.overview(db, user, ctx.attempts, now),
         competencies=competency_overview(db, user.id),
     )
+
+
+@router.post("/profile/reset", status_code=204, summary="Сбросить свою статистику: попытки, очки опыта, достижения, челленджи")
+def reset_profile(db: Db, user: CurrentUser) -> None:
+    # Журнал решений ссылается на попытки, поэтому удаляется первым.
+    for model in (AttemptEvent, Attempt, XpGrant, UserCompetency, UserAchievement, UserChallenge, Notification):
+        db.execute(delete(model).where(model.user_id == user.id))
+    db.commit()
 
 
 @router.get("/leaderboard", summary="Рейтинг по активным баллам (сгорают через 30 дней)")

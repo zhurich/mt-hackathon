@@ -582,6 +582,25 @@
         ]
       }
     },
+    "/api/v1/profile/reset": {
+      "post": {
+        "tags": [
+          "Профиль и геймификация"
+        ],
+        "summary": "Сбросить свою статистику: попытки, очки опыта, достижения, челленджи",
+        "operationId": "reset_profile_api_v1_profile_reset_post",
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
     "/api/v1/leaderboard": {
       "get": {
         "tags": [

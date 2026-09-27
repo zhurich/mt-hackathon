@@ -1,15 +1,30 @@
 import { Link } from 'react-router-dom'
-import { useQuery } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { api } from '../api/client'
 import type { AttemptHistoryItem, Profile } from '../api/types'
 import { useAuth } from '../auth'
-import { Async, Button, Card, Icon, OutcomeChip, ProgressBar } from '../components/ui'
+import { Async, Button, Card, ErrorBox, Icon, OutcomeChip, ProgressBar } from '../components/ui'
 import { ACHIEVEMENT_ICON, experience, formatDate, formatDateTime } from '../labels'
 
 export default function ProfilePage() {
   const { logout } = useAuth()
   const profile = useQuery({ queryKey: ['profile'], queryFn: () => api.get<Profile>('/profile') })
   const history = useQuery({ queryKey: ['attempts'], queryFn: () => api.get<AttemptHistoryItem[]>('/attempts?limit=20') })
+  const queryClient = useQueryClient()
+  const reset = useMutation({
+    mutationFn: () => api.post('/profile/reset'),
+    onSuccess: () => {
+      for (const key of ['profile', 'scenarios', 'notifications', 'analytics', 'leaderboard', 'attempts']) {
+        queryClient.invalidateQueries({ queryKey: [key] })
+      }
+    },
+  })
+
+  function confirmReset() {
+    if (window.confirm('Сбросить статистику? Будут удалены история прохождений, очки опыта, баллы рейтинга, достижения и челленджи. Отменить сброс нельзя.')) {
+      reset.mutate()
+    }
+  }
 
   return (
     <>
@@ -100,7 +115,11 @@ export default function ProfilePage() {
         }
       </Async>
 
-      <Button variant="secondary" block icon="log-out" onClick={logout}>Выйти из аккаунта</Button>
+      <div className="stack" style={{ gap: 8 }}>
+        <Button variant="secondary" block icon="rotate-ccw" loading={reset.isPending} onClick={confirmReset}>Сбросить статистику</Button>
+        {reset.error && <ErrorBox error={reset.error} />}
+        <Button variant="secondary" block icon="log-out" onClick={logout}>Выйти из аккаунта</Button>
+      </div>
     </>
   )
 }

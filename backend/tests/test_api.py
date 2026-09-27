@@ -75,6 +75,20 @@ def test_full_cycle_updates_profile_and_rating(client):
     assert any(n["kind"] == "achievement" for n in notes["items"])
 
 
+def test_profile_reset_clears_progress(client):
+    headers = login(client, "igor")
+    play_best(client, headers, "double-booking")
+    assert client.post(f"{API}/profile/reset", headers=headers).status_code == 204
+
+    profile = client.get(f"{API}/profile", headers=headers).json()
+    assert profile["total_xp"] == 0
+    assert profile["active_points"] == 0
+    assert profile["finished_attempts"] == 0
+    assert not any(a["earned_at"] for a in profile["achievements"])
+    assert all(c["samples"] == 0 for c in profile["competencies"])
+    assert client.get(f"{API}/attempts", headers=headers).json() == []
+
+
 def test_debrief_explains_every_decision(client, conductor):
     view = client.post(f"{API}/attempts", json={"scenario_id": "lost-child"}, headers=conductor).json()
     attempt_id = view["id"]
